@@ -4,4 +4,12 @@ version = "0.1.0"
 authors = ["Max Leonhardt <m.leonhardt424@gmail.com>"]
 edition = "2018"
 
+[lib]
+name = "rox_lib"
+path = "src/rox_lib/lib.rs"
+
+[[bin]]
+name = "rox"
+path = "src/main.rs"
+
 [dependencies]
