@@ -1,7 +1,9 @@
 use rox_lib::chunk::{Chunk, OpCode};
-use rox_lib::debug::disassemble_chuck;
+use rox_lib::vm::VM;
 
 fn main() {
+    let mut vm = VM::new();
+
     let mut chunk = Chunk::new();
     let constant = chunk.add_constant(1.2);
     chunk.write(OpCode::Constant as u8, 1);
@@ -9,5 +11,5 @@ fn main() {
 
     chunk.write(OpCode::Return as u8, 1);
 
-    disassemble_chuck(&chunk, "test chunk");
+    vm.interpret(chunk);
 }
