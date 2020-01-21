@@ -15,7 +15,6 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
 
     if offset > 0 && chunk.lines[offset] == chunk.lines[offset - 1] {
         print!("   | ");
-
     } else {
         print!("{:>4} ", chunk.lines[offset]);
     }
@@ -33,7 +32,7 @@ fn simple_instruction(instruction: OpCode, offset: usize) -> usize {
 }
 
 fn constant_instruction(instruction: OpCode, chunk: &Chunk, offset: usize) -> usize {
-    let constant =  chunk.code[offset + 1] as usize;
+    let constant = chunk.code[offset + 1] as usize;
     print!("{:<16} {:>4} ", instruction.to_string(), constant);
     print_value(chunk.constants[constant]);
     println!();

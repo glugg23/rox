@@ -1,5 +1,5 @@
-use std::fmt::{Display, Error, Formatter};
 use crate::Value;
+use std::fmt::{Display, Error, Formatter};
 
 pub enum OpCode {
     Return,
@@ -11,7 +11,7 @@ impl From<u8> for OpCode {
         match byte {
             0 => OpCode::Return,
             1 => OpCode::Constant,
-            _ => panic!("Unknown Opcode")
+            _ => panic!("Unknown Opcode"),
         }
     }
 }
@@ -37,7 +37,11 @@ pub struct Chunk {
 
 impl Chunk {
     pub fn new() -> Self {
-        Chunk { code: Vec::new(), constants: Vec::new(), lines: Vec::new() }
+        Chunk {
+            code: Vec::new(),
+            constants: Vec::new(),
+            lines: Vec::new(),
+        }
     }
 
     pub fn write(&mut self, byte: u8, line: i32) {
