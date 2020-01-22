@@ -4,11 +4,13 @@ use crate::Value;
 
 #[macro_export]
 macro_rules! binary_op {
-    ($vm:ident, $op:tt) => {
-        let b = $vm.pop();
-        let a = $vm.pop();
-        $vm.push(a $op b);
-    };
+    ($vm:ident, $op:tt) => (
+        {
+            let b = $vm.pop();
+            let a = $vm.pop();
+            $vm.push(a $op b);
+        };
+    )
 }
 
 pub struct VM {
@@ -55,6 +57,10 @@ impl VM {
                     print_value(constant);
                     println!();
                 }
+                OpCode::Add => binary_op!(self, +),
+                OpCode::Subtract => binary_op!(self, -),
+                OpCode::Multiple => binary_op!(self, *),
+                OpCode::Divide => binary_op!(self, /),
                 OpCode::Negate => {
                     let negated = -self.pop();
                     self.push(negated);
