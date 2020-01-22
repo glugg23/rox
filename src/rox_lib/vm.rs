@@ -2,6 +2,15 @@ use crate::chunk::{Chunk, OpCode};
 use crate::debug::{disassemble_instruction, print_value};
 use crate::Value;
 
+#[macro_export]
+macro_rules! binary_op {
+    ($vm:ident, $op:tt) => {
+        let b = $vm.pop();
+        let a = $vm.pop();
+        $vm.push(a $op b);
+    };
+}
+
 pub struct VM {
     chunk: Chunk,
     ip: usize, //Instruction Pointer
