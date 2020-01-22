@@ -40,16 +40,20 @@ impl VM {
             let instruction = OpCode::from(self.read_byte());
 
             match instruction {
-                OpCode::Return => {
-                    print_value(self.pop());
-                    println!();
-                    return InterpretResult::Ok;
-                }
                 OpCode::Constant => {
                     let constant = self.read_constant();
                     self.push(constant);
                     print_value(constant);
                     println!();
+                }
+                OpCode::Negate => {
+                    let negated = -self.pop();
+                    self.push(negated);
+                }
+                OpCode::Return => {
+                    print_value(self.pop());
+                    println!();
+                    return InterpretResult::Ok;
                 }
             };
         }
