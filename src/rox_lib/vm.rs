@@ -5,6 +5,7 @@ use crate::Value;
 pub struct VM {
     chunk: Chunk,
     ip: usize, //Instruction Pointer
+    stack: Vec<Value>,
 }
 
 impl VM {
@@ -12,6 +13,7 @@ impl VM {
         VM {
             chunk: Chunk::new(), //Create throwaway Chunk to avoid Option<Chunk>
             ip: 0,
+            stack: Vec::new(),
         }
     }
 
@@ -23,15 +25,29 @@ impl VM {
     fn run(&mut self) -> InterpretResult {
         loop {
             if cfg!(debug_assertions) {
+                print!("          ");
+
+                for slot in &self.stack {
+                    print!("[ ");
+                    print_value(*slot);
+                    print!(" ]");
+                }
+                println!();
+
                 disassemble_instruction(&self.chunk, self.ip);
             }
 
             let instruction = OpCode::from(self.read_byte());
 
             match instruction {
-                OpCode::Return => return InterpretResult::Ok,
+                OpCode::Return => {
+                    print_value(self.pop());
+                    println!();
+                    return InterpretResult::Ok;
+                }
                 OpCode::Constant => {
                     let constant = self.read_constant();
+                    self.push(constant);
                     print_value(constant);
                     println!();
                 }
@@ -48,6 +64,15 @@ impl VM {
     fn read_constant(&mut self) -> Value {
         let index = self.read_byte() as usize;
         self.chunk.constants[index]
+    }
+
+    fn push(&mut self, value: Value) {
+        self.stack.push(value);
+    }
+
+    fn pop(&mut self) -> Value {
+        //Unwrap for now
+        self.stack.pop().unwrap()
     }
 }
 
