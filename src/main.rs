@@ -1,29 +1,49 @@
-use rox_lib::chunk::{Chunk, OpCode};
-use rox_lib::vm::VM;
+use rox_lib::vm::{InterpretResult, VM};
+use std::env;
+use std::fs;
+use std::io;
+use std::io::Write;
+use std::path::Path;
+use std::process;
 
 fn main() {
     let mut vm = VM::new();
 
-    let mut chunk = Chunk::new();
-    let constant = chunk.add_constant(1.2);
-    chunk.write(OpCode::Constant as u8, 1);
-    chunk.write(constant as u8, 1);
+    if env::args().len() == 1 {
+        repl(&mut vm);
+    } else if env::args().len() == 2 {
+        run_file(&mut vm, &env::args().collect::<Vec<_>>()[1]);
+    } else {
+        eprintln!("Usage: rox [path]");
+        process::exit(64);
+    }
+}
 
-    let constant = chunk.add_constant(3.4);
-    chunk.write(OpCode::Constant as u8, 2);
-    chunk.write(constant as u8, 2);
+fn repl(vm: &mut VM) -> ! {
+    loop {
+        print!("> ");
+        io::stdout().flush().unwrap();
 
-    chunk.write(OpCode::Add as u8, 3);
+        let mut line = String::new();
+        io::stdin().read_line(&mut line).unwrap();
 
-    let constant = chunk.add_constant(5.6);
-    chunk.write(OpCode::Constant as u8, 4);
-    chunk.write(constant as u8, 4);
+        vm.interpret(&line);
+    }
+}
 
-    chunk.write(OpCode::Divide as u8, 5);
+fn run_file<P: AsRef<Path>>(vm: &mut VM, path: P) {
+    let source = match fs::read_to_string(&path) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("Could not open file '{}'", path.as_ref().display());
+            process::exit(74);
+        }
+    };
 
-    chunk.write(OpCode::Negate as u8, 6);
-
-    chunk.write(OpCode::Return as u8, 7);
-
-    vm.interpret(chunk);
+    let result = vm.interpret(&source);
+    match result {
+        InterpretResult::CompileError => process::exit(65),
+        InterpretResult::RuntimeError => process::exit(70),
+        InterpretResult::Ok => process::exit(0),
+    }
 }

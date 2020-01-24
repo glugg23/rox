@@ -28,9 +28,8 @@ impl VM {
         }
     }
 
-    pub fn interpret(&mut self, chunk: Chunk) -> InterpretResult {
-        self.chunk = chunk;
-        self.run()
+    pub fn interpret(&mut self, source: &str) -> InterpretResult {
+        InterpretResult::Ok
     }
 
     fn run(&mut self) -> InterpretResult {
