@@ -1,4 +1,5 @@
 use crate::chunk::{Chunk, OpCode};
+use crate::compiler::compile;
 use crate::debug::{disassemble_instruction, print_value};
 use crate::Value;
 
@@ -29,6 +30,7 @@ impl VM {
     }
 
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
+        compile(source);
         InterpretResult::Ok
     }
 
