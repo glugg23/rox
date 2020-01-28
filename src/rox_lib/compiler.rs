@@ -17,7 +17,7 @@ pub fn compile(source: &str) {
         println!(
             "{:>12} '{}'",
             token.token_type.to_string(),
-            scanner.token_slice(token.start, token.length)
+            token.lexeme.into_iter().collect::<String>()
         );
 
         if token.token_type == TokenType::EOF {

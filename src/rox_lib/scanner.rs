@@ -1,7 +1,7 @@
 use std::fmt::{Display, Error, Formatter};
 
 pub struct Scanner {
-    lexeme: Vec<char>,
+    source: Vec<char>,
     start: usize,
     current: usize,
     line: i32,
@@ -10,27 +10,45 @@ pub struct Scanner {
 impl Scanner {
     pub fn new(source: &str) -> Self {
         Scanner {
-            lexeme: source.chars().collect(),
+            source: source.chars().collect(),
             start: 0,
             current: 0,
             line: 1,
         }
     }
 
-    pub fn scan_token(&mut self) -> Token {}
+    pub fn scan_token(&mut self) -> Token {
+        self.start = self.current;
 
-    pub fn token_slice(&self, start: usize, length: usize) -> String {
-        self.lexeme[start..start + length].iter().collect()
+        if self.is_at_end() {
+            return Token::new(self, TokenType::EOF);
+        }
+
+        Token::new(self, TokenType::Error)
+    }
+
+    fn is_at_end(&self) -> bool {
+        self.current == self.source.len()
     }
 }
 
-pub struct Token {
+pub struct Token<'a> {
     pub token_type: TokenType,
-    pub start: usize,
-    pub length: usize,
+    pub lexeme: &'a [char],
     pub line: i32,
 }
 
+impl<'a> Token<'a> {
+    pub fn new(scanner: &'a Scanner, token_type: TokenType) -> Self {
+        Token {
+            token_type,
+            lexeme: &scanner.source[scanner.start..scanner.current],
+            line: scanner.line,
+        }
+    }
+}
+
+#[derive(PartialEq)]
 pub enum TokenType {
     //Single-character tokens
     LeftParen,
