@@ -1,4 +1,6 @@
-use std::fmt::{Display, Error, Formatter};
+use crate::RoxError;
+use std::fmt;
+use std::fmt::{Display, Formatter};
 
 pub struct Scanner {
     source: Vec<char>,
@@ -17,14 +19,14 @@ impl Scanner {
         }
     }
 
-    pub fn scan_token(&mut self) -> Token {
+    pub fn scan_token(&mut self) -> Result<Token, RoxError> {
         self.start = self.current;
 
         if self.is_at_end() {
-            return Token::new(self, TokenType::EOF);
+            return Ok(Token::new(self, TokenType::EOF));
         }
 
-        Token::new(self, TokenType::Error)
+        Err(RoxError::new("Unexpected character.", self.line))
     }
 
     fn is_at_end(&self) -> bool {
@@ -98,11 +100,10 @@ pub enum TokenType {
 
     //Other
     EOF,
-    Error,
 }
 
 impl Display for TokenType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(
             f,
             "{}",
@@ -150,7 +151,6 @@ impl Display for TokenType {
                 TokenType::While => "While",
 
                 TokenType::EOF => "EOF",
-                TokenType::Error => "Error",
             }
         )
     }

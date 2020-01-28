@@ -35,7 +35,7 @@ fn run_file<P: AsRef<Path>>(vm: &mut VM, path: P) {
     let source = match fs::read_to_string(&path) {
         Ok(s) => s,
         Err(e) => {
-            eprintln!("Could not open file '{}'", path.as_ref().display());
+            eprintln!("Could not open file '{}'.\n{}", path.as_ref().display(), e);
             process::exit(74);
         }
     };

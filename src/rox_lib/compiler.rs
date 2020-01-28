@@ -1,11 +1,12 @@
 use crate::scanner::{Scanner, TokenType};
+use crate::RoxError;
 
-pub fn compile(source: &str) {
+pub fn compile(source: &str) -> Result<(), RoxError> {
     let mut scanner = Scanner::new(source);
     let mut line = -1;
 
     loop {
-        let token = scanner.scan_token();
+        let token = scanner.scan_token()?;
 
         if token.line != line {
             print!("{:>4} ", token.line);
@@ -24,4 +25,6 @@ pub fn compile(source: &str) {
             break;
         }
     }
+
+    Ok(())
 }

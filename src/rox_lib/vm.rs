@@ -30,8 +30,10 @@ impl VM {
     }
 
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
-        compile(source);
-        InterpretResult::Ok
+        match compile(source) {
+            Ok(_) => InterpretResult::Ok,
+            Err(_e) => InterpretResult::CompileError,
+        }
     }
 
     fn run(&mut self) -> InterpretResult {
