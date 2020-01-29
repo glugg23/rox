@@ -89,11 +89,11 @@ impl Scanner {
             match c {
                 ' ' | '\r' | '\t' => {
                     self.advance();
-                },
+                }
                 '\n' => {
                     self.line += 1;
                     self.advance();
-                },
+                }
                 _ => return,
             }
         }

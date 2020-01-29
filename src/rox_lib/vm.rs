@@ -1,3 +1,4 @@
+use crate::chunk::OpCode::*;
 use crate::chunk::{Chunk, OpCode};
 use crate::compiler::compile;
 use crate::debug::{disassemble_instruction, print_value};
@@ -53,21 +54,21 @@ impl VM {
             let instruction = OpCode::from(self.read_byte());
 
             match instruction {
-                OpCode::Constant => {
+                Constant => {
                     let constant = self.read_constant();
                     self.push(constant);
                     print_value(constant);
                     println!();
                 }
-                OpCode::Add => binary_op!(self, +),
-                OpCode::Subtract => binary_op!(self, -),
-                OpCode::Multiple => binary_op!(self, *),
-                OpCode::Divide => binary_op!(self, /),
-                OpCode::Negate => {
+                Add => binary_op!(self, +),
+                Subtract => binary_op!(self, -),
+                Multiple => binary_op!(self, *),
+                Divide => binary_op!(self, /),
+                Negate => {
                     let negated = -self.pop();
                     self.push(negated);
                 }
-                OpCode::Return => {
+                Return => {
                     print_value(self.pop());
                     println!();
                     return InterpretResult::Ok;
