@@ -33,6 +33,8 @@ impl Scanner {
     }
 
     pub fn scan_token(&mut self) -> Result<Token, RoxError> {
+        self.skip_whitespace();
+
         self.start = self.current;
 
         if self.is_at_end() {
@@ -63,10 +65,6 @@ impl Scanner {
         Err(RoxError::new("Unexpected character.", self.line))
     }
 
-    fn is_at_end(&self) -> bool {
-        self.current == self.source.len()
-    }
-
     fn advance(&mut self) -> char {
         self.current += 1;
         self.source[self.current - 1]
@@ -83,6 +81,30 @@ impl Scanner {
 
         self.current += 1;
         true
+    }
+
+    fn skip_whitespace(&mut self) {
+        loop {
+            let c = self.peek();
+            match c {
+                ' ' | '\r' | '\t' => {
+                    self.advance();
+                },
+                '\n' => {
+                    self.line += 1;
+                    self.advance();
+                },
+                _ => return,
+            }
+        }
+    }
+
+    fn is_at_end(&self) -> bool {
+        self.current == self.source.len()
+    }
+
+    fn peek(&self) -> char {
+        self.source[self.current]
     }
 }
 
