@@ -1,6 +1,20 @@
+use crate::scanner::TokenType::*;
 use crate::RoxError;
 use std::fmt;
 use std::fmt::{Display, Formatter};
+
+#[macro_export]
+macro_rules! two_char_token {
+    ($scanner:ident, $token:expr, $first:path, $second:path) => {{
+        let token_type = if $scanner.match_token($token) {
+            $first
+        } else {
+            $second
+        };
+
+        return Ok(Token::new($scanner, token_type));
+    }};
+}
 
 pub struct Scanner {
     source: Vec<char>,
@@ -23,7 +37,28 @@ impl Scanner {
         self.start = self.current;
 
         if self.is_at_end() {
-            return Ok(Token::new(self, TokenType::EOF));
+            return Ok(Token::new(self, EOF));
+        }
+
+        let c = self.advance();
+
+        match c {
+            '(' => return Ok(Token::new(self, LeftParen)),
+            ')' => return Ok(Token::new(self, RightParen)),
+            '{' => return Ok(Token::new(self, LeftBrace)),
+            '}' => return Ok(Token::new(self, RightBrace)),
+            ';' => return Ok(Token::new(self, Semicolon)),
+            ',' => return Ok(Token::new(self, Comma)),
+            '.' => return Ok(Token::new(self, Dot)),
+            '-' => return Ok(Token::new(self, Minus)),
+            '+' => return Ok(Token::new(self, Plus)),
+            '/' => return Ok(Token::new(self, Slash)),
+            '*' => return Ok(Token::new(self, Star)),
+            '!' => two_char_token!(self, '=', BangEqual, Bang),
+            '=' => two_char_token!(self, '=', EqualEqual, Equal),
+            '<' => two_char_token!(self, '=', LessEqual, Less),
+            '>' => two_char_token!(self, '=', GreaterEqual, Greater),
+            _ => (),
         }
 
         Err(RoxError::new("Unexpected character.", self.line))
@@ -31,6 +66,24 @@ impl Scanner {
 
     fn is_at_end(&self) -> bool {
         self.current == self.source.len()
+    }
+
+    fn advance(&mut self) -> char {
+        self.current += 1;
+        self.source[self.current - 1]
+    }
+
+    fn match_token(&mut self, expected: char) -> bool {
+        if self.is_at_end() {
+            return false;
+        }
+
+        if self.source[self.current] != expected {
+            return false;
+        }
+
+        self.current += 1;
+        true
     }
 }
 
@@ -108,49 +161,49 @@ impl Display for TokenType {
             f,
             "{}",
             match self {
-                TokenType::LeftParen => "LeftParen",
-                TokenType::RightParen => "RightParen",
-                TokenType::LeftBrace => "LeftBrace",
-                TokenType::RightBrace => "RightBrace",
-                TokenType::Comma => "Comma",
-                TokenType::Dot => "Dot",
-                TokenType::Minus => "Minus",
-                TokenType::Plus => "Plus",
-                TokenType::Semicolon => "Semicolon",
-                TokenType::Slash => "Slash",
-                TokenType::Star => "Star",
+                LeftParen => "LeftParen",
+                RightParen => "RightParen",
+                LeftBrace => "LeftBrace",
+                RightBrace => "RightBrace",
+                Comma => "Comma",
+                Dot => "Dot",
+                Minus => "Minus",
+                Plus => "Plus",
+                Semicolon => "Semicolon",
+                Slash => "Slash",
+                Star => "Star",
 
-                TokenType::Bang => "Bang",
-                TokenType::BangEqual => "BangEqual",
-                TokenType::Equal => "Equal",
-                TokenType::EqualEqual => "EqualEqual",
-                TokenType::Greater => "Greater",
-                TokenType::GreaterEqual => "GreaterEqual",
-                TokenType::Less => "Less",
-                TokenType::LessEqual => "LessEqual",
+                Bang => "Bang",
+                BangEqual => "BangEqual",
+                Equal => "Equal",
+                EqualEqual => "EqualEqual",
+                Greater => "Greater",
+                GreaterEqual => "GreaterEqual",
+                Less => "Less",
+                LessEqual => "LessEqual",
 
-                TokenType::Identifier => "Identifier",
-                TokenType::String => "String",
-                TokenType::Number => "Number",
+                Identifier => "Identifier",
+                String => "String",
+                Number => "Number",
 
-                TokenType::And => "And",
-                TokenType::Class => "Class",
-                TokenType::Else => "Else",
-                TokenType::False => "False",
-                TokenType::For => "For",
-                TokenType::Fun => "Fun",
-                TokenType::If => "If",
-                TokenType::Nil => "Nil",
-                TokenType::Or => "Or",
-                TokenType::Print => "Print",
-                TokenType::Return => "Return",
-                TokenType::Super => "Super",
-                TokenType::This => "This",
-                TokenType::True => "True",
-                TokenType::Var => "Var",
-                TokenType::While => "While",
+                And => "And",
+                Class => "Class",
+                Else => "Else",
+                False => "False",
+                For => "For",
+                Fun => "Fun",
+                If => "If",
+                Nil => "Nil",
+                Or => "Or",
+                Print => "Print",
+                Return => "Return",
+                Super => "Super",
+                This => "This",
+                True => "True",
+                Var => "Var",
+                While => "While",
 
-                TokenType::EOF => "EOF",
+                EOF => "EOF",
             }
         )
     }
