@@ -3,7 +3,6 @@ use crate::compiler::compile;
 use crate::debug::{disassemble_instruction, print_value};
 use crate::Value;
 
-#[macro_export]
 macro_rules! binary_op {
     ($vm:ident, $op:tt) => (
         {

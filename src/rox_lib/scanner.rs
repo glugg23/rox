@@ -3,7 +3,6 @@ use crate::RoxError;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
-#[macro_export]
 macro_rules! two_char_token {
     ($scanner:ident, $token:expr, $first:path, $second:path) => {{
         let token_type = if $scanner.match_token($token) {
