@@ -94,6 +94,15 @@ impl Scanner {
                     self.line += 1;
                     self.advance();
                 }
+                '/' => {
+                    if self.peek_next() == '/' {
+                        while self.peek() != '\n' && !self.is_at_end() {
+                            self.advance();
+                        }
+                    } else {
+                        return;
+                    }
+                }
                 _ => return,
             }
         }
@@ -105,6 +114,14 @@ impl Scanner {
 
     fn peek(&self) -> char {
         self.source[self.current]
+    }
+
+    fn peek_next(&self) -> char {
+        if self.is_at_end() {
+            '\0' //Maybe return None here
+        } else {
+            self.source[self.current + 1] //And Some(char) here
+        }
     }
 }
 
