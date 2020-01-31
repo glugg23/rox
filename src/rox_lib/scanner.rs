@@ -43,6 +43,10 @@ impl Scanner {
 
         let c = self.advance();
 
+        if c.is_ascii_digit() {
+            return Ok(self.number());
+        }
+
         match c {
             '(' => return Ok(Token::new(self, LeftParen)),
             ')' => return Ok(Token::new(self, RightParen)),
@@ -99,6 +103,24 @@ impl Scanner {
         //Consume double quote
         self.advance();
         Ok(Token::new(self, String))
+    }
+
+    fn number(&mut self) -> Token {
+        while self.peek().is_ascii_digit() {
+            self.advance();
+        }
+
+        //Look for fractional number
+        if self.peek() == '.' && self.peek_next().is_ascii_digit() {
+            //Consume dot
+            self.advance();
+
+            while self.peek().is_ascii_digit() {
+                self.advance();
+            }
+        }
+
+        Token::new(self, Number)
     }
 
     fn skip_whitespace(&mut self) {
