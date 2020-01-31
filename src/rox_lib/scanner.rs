@@ -59,6 +59,7 @@ impl Scanner {
             '=' => two_char_token!(self, '=', EqualEqual, Equal),
             '<' => two_char_token!(self, '=', LessEqual, Less),
             '>' => two_char_token!(self, '=', GreaterEqual, Greater),
+            '"' => return self.string(),
             _ => (),
         }
 
@@ -83,8 +84,29 @@ impl Scanner {
         true
     }
 
+    fn string(&mut self) -> Result<Token, RoxError> {
+        while self.peek() != '"' && !self.is_at_end() {
+            if self.peek() == '\n' {
+                self.line += 1;
+            }
+            self.advance();
+        }
+
+        if self.is_at_end() {
+            return Err(RoxError::new("Unterminated string.", self.line));
+        }
+
+        //Consume double quote
+        self.advance();
+        Ok(Token::new(self, String))
+    }
+
     fn skip_whitespace(&mut self) {
         loop {
+            if self.is_at_end() {
+                return;
+            }
+
             let c = self.peek();
             match c {
                 ' ' | '\r' | '\t' => {
@@ -109,7 +131,7 @@ impl Scanner {
     }
 
     fn is_at_end(&self) -> bool {
-        self.current == self.source.len()
+        self.current == self.source.len() - 1
     }
 
     fn peek(&self) -> char {
