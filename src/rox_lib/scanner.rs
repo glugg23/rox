@@ -15,6 +15,12 @@ macro_rules! two_char_token {
     }};
 }
 
+macro_rules! is_alpha {
+    ($char:expr) => {
+        $char.is_ascii_alphabetic() || $char == '_'
+    };
+}
+
 pub struct Scanner {
     source: Vec<char>,
     start: usize,
@@ -42,6 +48,10 @@ impl Scanner {
         }
 
         let c = self.advance();
+
+        if is_alpha!(c) {
+            return Ok(self.identifier());
+        }
 
         if c.is_ascii_digit() {
             return Ok(self.number());
@@ -102,7 +112,7 @@ impl Scanner {
 
         //Consume double quote
         self.advance();
-        Ok(Token::new(self, String))
+        Ok(Token::new(self, RoxString))
     }
 
     fn number(&mut self) -> Token {
@@ -121,6 +131,68 @@ impl Scanner {
         }
 
         Token::new(self, Number)
+    }
+
+    fn identifier(&mut self) -> Token {
+        while is_alpha!(self.peek()) || self.peek().is_ascii_digit() {
+            self.advance();
+        }
+
+        let token_type = self.identifier_type();
+        Token::new(self, token_type)
+    }
+
+    fn identifier_type(&mut self) -> TokenType {
+        return match self.source[self.start] {
+            'a' => self.check_keyword(1, "nd", And),
+            'c' => self.check_keyword(1, "lass", Class),
+            'e' => self.check_keyword(1, "lse", Else),
+            'f' => {
+                if self.current - self.start > 1 {
+                    return match self.source[self.start + 1] {
+                        'a' => self.check_keyword(2, "lse", False),
+                        'o' => self.check_keyword(2, "r", For),
+                        'u' => self.check_keyword(2, "n", Fun),
+                        _ => Identifier,
+                    };
+                }
+
+                return Identifier;
+            }
+            'i' => self.check_keyword(1, "f", If),
+            'n' => self.check_keyword(1, "il", Nil),
+            'o' => self.check_keyword(1, "r", Or),
+            'p' => self.check_keyword(1, "rint", Print),
+            'r' => self.check_keyword(1, "eturn", Return),
+            's' => self.check_keyword(1, "uper", Super),
+            't' => {
+                if self.current - self.start > 1 {
+                    return match self.source[self.start + 1] {
+                        'h' => self.check_keyword(2, "is", This),
+                        'r' => self.check_keyword(2, "ue", True),
+                        _ => Identifier,
+                    };
+                }
+
+                return Identifier;
+            }
+            'v' => self.check_keyword(1, "ar", Var),
+            'w' => self.check_keyword(1, "hile", While),
+            _ => Identifier,
+        };
+    }
+
+    fn check_keyword(&self, start: usize, rest: &str, token_type: TokenType) -> TokenType {
+        if self.current - self.start == start + rest.len() {
+            let slice: String = self.source[self.start + start..self.start + start + rest.len()]
+                .iter()
+                .collect();
+            if slice == rest.to_string() {
+                return token_type;
+            }
+        }
+
+        Identifier
     }
 
     fn skip_whitespace(&mut self) {
@@ -212,7 +284,7 @@ pub enum TokenType {
 
     //Literals
     Identifier,
-    String,
+    RoxString,
     Number,
 
     //Keywords
@@ -265,7 +337,7 @@ impl Display for TokenType {
                 LessEqual => "LessEqual",
 
                 Identifier => "Identifier",
-                String => "String",
+                RoxString => "String",
                 Number => "Number",
 
                 And => "And",
