@@ -1,3 +1,4 @@
+use crate::chunk::OpCode::*;
 use crate::chunk::{Chunk, OpCode};
 use crate::Value;
 
@@ -21,13 +22,10 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
 
     let instruction = OpCode::from(chunk.code[offset]);
     match instruction {
-        OpCode::Constant => constant_instruction(instruction, chunk, offset),
-        OpCode::Add => simple_instruction(instruction, offset),
-        OpCode::Subtract => simple_instruction(instruction, offset),
-        OpCode::Multiple => simple_instruction(instruction, offset),
-        OpCode::Divide => simple_instruction(instruction, offset),
-        OpCode::Negate => simple_instruction(instruction, offset),
-        OpCode::Return => simple_instruction(instruction, offset),
+        Constant => constant_instruction(instruction, chunk, offset),
+        Add | Subtract | Multiple | Divide | Negate | Return => {
+            simple_instruction(instruction, offset)
+        }
     }
 }
 

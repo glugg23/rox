@@ -1,5 +1,6 @@
 use crate::Value;
-use std::fmt::{Display, Error, Formatter};
+use std::fmt;
+use std::fmt::{Display, Formatter};
 
 pub struct Chunk {
     pub code: Vec<u8>,
@@ -53,7 +54,7 @@ impl From<u8> for OpCode {
 }
 
 impl Display for OpCode {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), Error> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(
             f,
             "{}",
