@@ -241,34 +241,36 @@ impl Scanner {
     }
 }
 
-#[derive(Copy, Clone)]
-pub struct Token<'a> {
+#[derive(Clone)]
+pub struct Token {
     pub token_type: TokenType,
-    pub lexeme: &'a [char],
+    pub lexeme: String,
     pub line: i32,
 }
 
-impl<'a> Token<'a> {
-    pub fn new(scanner: &'a Scanner, token_type: TokenType) -> Self {
+impl Token {
+    pub fn new(scanner: &Scanner, token_type: TokenType) -> Self {
         Token {
             token_type,
-            lexeme: &scanner.source[scanner.start..scanner.current],
+            lexeme: scanner.source[scanner.start..scanner.current]
+                .iter()
+                .collect(),
             line: scanner.line,
         }
     }
 }
 
-impl Default for Token<'_> {
+impl Default for Token {
     fn default() -> Self {
         Token {
             token_type: EOF,
-            lexeme: &[],
-            line: 0
+            lexeme: String::new(),
+            line: 0,
         }
     }
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum TokenType {
     //Single-character tokens
     LeftParen,

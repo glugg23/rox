@@ -1,14 +1,14 @@
 use crate::chunk::Chunk;
 use crate::scanner::TokenType::EOF;
-use crate::scanner::{Scanner, TokenType, Token};
+use crate::scanner::{Scanner, Token, TokenType};
 use crate::RoxError;
 
-pub struct Parser<'a> {
-    current: Token<'a>,
-    previous: Token<'a>,
+pub struct Parser {
+    current: Token,
+    previous: Token,
 }
 
-impl Parser<'_> {
+impl Parser {
     pub fn new() -> Self {
         Parser {
             current: Token::default(),
@@ -28,8 +28,8 @@ pub fn compile(source: &str) -> Result<Chunk, RoxError> {
     Ok(Chunk::new())
 }
 
-fn advance<'a>(parser: &'a mut Parser<'a>, scanner: &'a mut Scanner) {
-    parser.previous = parser.current;
+fn advance(parser: &mut Parser, scanner: &mut Scanner) {
+    parser.previous = parser.current.clone(); //Needed since String doesn't implement Copy
 
     loop {
         let token = scanner.scan_token();
@@ -48,6 +48,4 @@ fn expression() {}
 
 fn consume(token_type: TokenType, message: &str) {}
 
-fn report_error(error: RoxError) {
-
-}
+fn report_error(error: RoxError) {}
