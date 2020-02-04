@@ -30,10 +30,12 @@ impl VM {
     }
 
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
-        match compile(source) {
-            Ok(_) => InterpretResult::Ok,
-            Err(_e) => InterpretResult::CompileError,
-        }
+        self.chunk = match compile(source) {
+            Ok(c) => c,
+            Err(_e) => return InterpretResult::CompileError,
+        };
+
+        self.run()
     }
 
     fn run(&mut self) -> InterpretResult {

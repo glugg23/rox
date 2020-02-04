@@ -241,6 +241,7 @@ impl Scanner {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Token<'a> {
     pub token_type: TokenType,
     pub lexeme: &'a [char],
@@ -257,7 +258,17 @@ impl<'a> Token<'a> {
     }
 }
 
-#[derive(PartialEq)]
+impl Default for Token<'_> {
+    fn default() -> Self {
+        Token {
+            token_type: EOF,
+            lexeme: &[],
+            line: 0
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq)]
 pub enum TokenType {
     //Single-character tokens
     LeftParen,
