@@ -31,8 +31,8 @@ impl VM {
 
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
         self.chunk = match compile(source) {
-            Ok(c) => c,
-            Err(_e) => return InterpretResult::CompileError,
+            Some(c) => c,
+            None => return InterpretResult::CompileError,
         };
 
         self.run()

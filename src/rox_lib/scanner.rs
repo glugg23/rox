@@ -77,7 +77,15 @@ impl Scanner {
             _ => (),
         }
 
-        Err(RoxError::new("Unexpected character.", self.line))
+        Err(RoxError::new(
+            "Unexpected character.",
+            self.get_token(),
+            self.line,
+        ))
+    }
+
+    pub fn get_token(&self) -> String {
+        self.source[self.start..self.current].iter().collect()
     }
 
     fn advance(&mut self) -> char {
@@ -107,7 +115,11 @@ impl Scanner {
         }
 
         if self.is_at_end() {
-            return Err(RoxError::new("Unterminated string.", self.line));
+            return Err(RoxError::new(
+                "Unterminated string.",
+                self.get_token(),
+                self.line,
+            ));
         }
 
         //Consume double quote
@@ -252,9 +264,7 @@ impl Token {
     pub fn new(scanner: &Scanner, token_type: TokenType) -> Self {
         Token {
             token_type,
-            lexeme: scanner.source[scanner.start..scanner.current]
-                .iter()
-                .collect(),
+            lexeme: scanner.get_token(),
             line: scanner.line,
         }
     }

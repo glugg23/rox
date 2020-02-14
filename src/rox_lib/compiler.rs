@@ -1,11 +1,12 @@
 use crate::chunk::Chunk;
 use crate::scanner::TokenType::EOF;
 use crate::scanner::{Scanner, Token, TokenType};
-use crate::RoxError;
 
 pub struct Parser {
     current: Token,
     previous: Token,
+    had_error: bool,
+    panic_mode: bool,
 }
 
 impl Parser {
@@ -13,11 +14,13 @@ impl Parser {
         Parser {
             current: Token::default(),
             previous: Token::default(),
+            had_error: false,
+            panic_mode: false,
         }
     }
 }
 
-pub fn compile(source: &str) -> Result<Chunk, RoxError> {
+pub fn compile(source: &str) -> Option<Chunk> {
     let mut scanner = Scanner::new(source);
     let mut parser = Parser::new();
 
@@ -25,7 +28,7 @@ pub fn compile(source: &str) -> Result<Chunk, RoxError> {
     expression();
     consume(EOF, "Expect end of expression.");
 
-    Ok(Chunk::new())
+    Some(Chunk::new())
 }
 
 fn advance(parser: &mut Parser, scanner: &mut Scanner) {
@@ -39,7 +42,13 @@ fn advance(parser: &mut Parser, scanner: &mut Scanner) {
                 parser.current = t;
                 break;
             }
-            Err(e) => report_error(e),
+            Err(e) => {
+                if !parser.panic_mode {
+                    parser.panic_mode = true;
+                    eprintln!("{}", e);
+                    parser.had_error = true;
+                }
+            }
         }
     }
 }
@@ -47,5 +56,3 @@ fn advance(parser: &mut Parser, scanner: &mut Scanner) {
 fn expression() {}
 
 fn consume(token_type: TokenType, message: &str) {}
-
-fn report_error(error: RoxError) {}
