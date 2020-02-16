@@ -1,6 +1,7 @@
 use crate::chunk::Chunk;
 use crate::scanner::TokenType::EOF;
 use crate::scanner::{Scanner, Token, TokenType};
+use crate::RoxError;
 
 pub struct Parser {
     current: Token,
@@ -18,6 +19,14 @@ impl Parser {
             panic_mode: false,
         }
     }
+
+    pub fn handle_error(&mut self, error: RoxError) {
+        if !self.panic_mode {
+            self.panic_mode = true;
+            eprintln!("{}", error);
+            self.had_error = true;
+        }
+    }
 }
 
 pub fn compile(source: &str) -> Option<Chunk> {
@@ -26,7 +35,9 @@ pub fn compile(source: &str) -> Option<Chunk> {
 
     advance(&mut parser, &mut scanner);
     expression();
-    consume(EOF, "Expect end of expression.");
+    consume(&mut parser, &mut scanner, EOF, "Expect end of expression.").unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
 
     Some(Chunk::new())
 }
@@ -43,11 +54,7 @@ fn advance(parser: &mut Parser, scanner: &mut Scanner) {
                 break;
             }
             Err(e) => {
-                if !parser.panic_mode {
-                    parser.panic_mode = true;
-                    eprintln!("{}", e);
-                    parser.had_error = true;
-                }
+                parser.handle_error(e);
             }
         }
     }
@@ -55,4 +62,16 @@ fn advance(parser: &mut Parser, scanner: &mut Scanner) {
 
 fn expression() {}
 
-fn consume(token_type: TokenType, message: &str) {}
+fn consume(
+    parser: &mut Parser,
+    scanner: &mut Scanner,
+    token_type: TokenType,
+    message: &str,
+) -> Result<(), RoxError> {
+    if parser.current.token_type == token_type {
+        advance(parser, scanner);
+        Ok(())
+    } else {
+        Err(RoxError::new(message, scanner.get_token(), scanner.line))
+    }
+}

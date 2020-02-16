@@ -25,7 +25,7 @@ pub struct Scanner {
     source: Vec<char>,
     start: usize,
     current: usize,
-    line: i32,
+    pub line: i32,
 }
 
 impl Scanner {
