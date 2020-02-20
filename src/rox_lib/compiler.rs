@@ -1,7 +1,8 @@
 use crate::chunk::{Chunk, OpCode};
 use crate::scanner::TokenType::EOF;
 use crate::scanner::{Scanner, Token, TokenType};
-use crate::RoxError;
+use crate::{RoxError, Value};
+use std::str::FromStr;
 
 pub struct Parser {
     current: Token,
@@ -29,6 +30,31 @@ impl Parser {
     pub fn emit_bytes(&mut self, byte1: u8, byte2: u8) {
         self.emit_byte(byte1);
         self.emit_byte(byte2);
+    }
+
+    fn number(&mut self) {
+        let value = f64::from_str(&self.previous.lexeme).unwrap(); //TODO: Don't use unwrap here
+        self.emit_constant(value);
+    }
+
+    fn emit_constant(&mut self, value: Value) {
+        let constant = self.make_constant(value);
+        self.emit_bytes(OpCode::Constant as u8, constant);
+    }
+
+    fn make_constant(&mut self, value: Value) -> u8 {
+        let constant = self.current_chunk.add_constant(value);
+
+        return if constant > std::u8::MAX as usize {
+            self.handle_error(RoxError::new(
+                "Too many constants in one chunk.",
+                self.previous.lexeme.clone(),
+                self.previous.line,
+            ));
+            0
+        } else {
+            constant as u8
+        };
     }
 
     pub fn end_compiler(&mut self) {
