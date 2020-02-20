@@ -280,7 +280,7 @@ impl Default for Token {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum TokenType {
     //Single-character tokens
     LeftParen,

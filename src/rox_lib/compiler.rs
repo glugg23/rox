@@ -1,5 +1,5 @@
 use crate::chunk::{Chunk, OpCode};
-use crate::scanner::TokenType::{RightParen, EOF};
+use crate::scanner::TokenType::*;
 use crate::scanner::{Scanner, Token, TokenType};
 use crate::{RoxError, Value};
 use std::str::FromStr;
@@ -35,6 +35,17 @@ impl Parser {
     fn number(&mut self) {
         let value = f64::from_str(&self.previous.lexeme).unwrap(); //TODO: Don't use unwrap here
         self.emit_constant(value);
+    }
+
+    fn unary(&mut self) {
+        let operator_type = self.previous.token_type;
+
+        expression();
+
+        match operator_type {
+            Minus => self.emit_byte(OpCode::Negate as u8),
+            _ => (),
+        }
     }
 
     fn emit_constant(&mut self, value: Value) {
