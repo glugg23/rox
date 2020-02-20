@@ -1,4 +1,4 @@
-use crate::chunk::Chunk;
+use crate::chunk::{Chunk, OpCode};
 use crate::scanner::TokenType::EOF;
 use crate::scanner::{Scanner, Token, TokenType};
 use crate::RoxError;
@@ -6,6 +6,7 @@ use crate::RoxError;
 pub struct Parser {
     current: Token,
     previous: Token,
+    current_chunk: Chunk,
     had_error: bool,
     panic_mode: bool,
 }
@@ -15,9 +16,23 @@ impl Parser {
         Parser {
             current: Token::default(),
             previous: Token::default(),
+            current_chunk: Chunk::new(),
             had_error: false,
             panic_mode: false,
         }
+    }
+
+    pub fn emit_byte(&mut self, byte: u8) {
+        self.current_chunk.write(byte, self.previous.line);
+    }
+
+    pub fn emit_bytes(&mut self, byte1: u8, byte2: u8) {
+        self.emit_byte(byte1);
+        self.emit_byte(byte2);
+    }
+
+    pub fn end_compiler(&mut self) {
+        self.emit_byte(OpCode::Return as u8);
     }
 
     pub fn handle_error(&mut self, error: RoxError) {
@@ -39,7 +54,13 @@ pub fn compile(source: &str) -> Option<Chunk> {
         parser.handle_error(e);
     });
 
-    Some(Chunk::new())
+    parser.end_compiler();
+
+    return if !parser.had_error {
+        Some(parser.current_chunk)
+    } else {
+        None
+    };
 }
 
 fn advance(parser: &mut Parser, scanner: &mut Scanner) {
