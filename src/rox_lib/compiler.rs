@@ -40,13 +40,15 @@ impl Parser {
     fn unary(&mut self) {
         let operator_type = self.previous.token_type;
 
-        expression();
+        self.parse_precedence(Precedence::Unary);
 
         match operator_type {
             Minus => self.emit_byte(OpCode::Negate as u8),
             _ => (),
         }
     }
+
+    fn parse_precedence(&mut self, precedence: Precedence) {}
 
     fn emit_constant(&mut self, value: Value) {
         let constant = self.make_constant(value);
@@ -69,7 +71,7 @@ impl Parser {
     }
 
     fn grouping(&mut self, scanner: &mut Scanner) {
-        expression();
+        expression(self);
         consume(self, scanner, RightParen, "Expect ')' after expression.").unwrap_or_else(|e| {
             self.handle_error(e);
         });
@@ -93,7 +95,7 @@ pub fn compile(source: &str) -> Option<Chunk> {
     let mut parser = Parser::new();
 
     advance(&mut parser, &mut scanner);
-    expression();
+    expression(&mut parser);
     consume(&mut parser, &mut scanner, EOF, "Expect end of expression.").unwrap_or_else(|e| {
         parser.handle_error(e);
     });
@@ -125,7 +127,9 @@ fn advance(parser: &mut Parser, scanner: &mut Scanner) {
     }
 }
 
-fn expression() {}
+fn expression(parser: &mut Parser) {
+    parser.parse_precedence(Precedence::Assignment);
+}
 
 fn consume(
     parser: &mut Parser,
@@ -139,4 +143,19 @@ fn consume(
     } else {
         Err(RoxError::new(message, scanner.get_token(), scanner.line))
     }
+}
+
+#[derive(PartialOrd, PartialEq)]
+enum Precedence {
+    None,
+    Assignment, // =
+    Or,         // or
+    And,        // and
+    Equality,   // == !=
+    Comparison, // < > <= >=
+    Term,       // + -
+    Factor,     // * /
+    Unary,      // ! -
+    Call,       // . ()
+    Primary,
 }
