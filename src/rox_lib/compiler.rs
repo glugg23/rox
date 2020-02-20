@@ -1,5 +1,5 @@
 use crate::chunk::{Chunk, OpCode};
-use crate::scanner::TokenType::EOF;
+use crate::scanner::TokenType::{RightParen, EOF};
 use crate::scanner::{Scanner, Token, TokenType};
 use crate::{RoxError, Value};
 use std::str::FromStr;
@@ -55,6 +55,13 @@ impl Parser {
         } else {
             constant as u8
         };
+    }
+
+    fn grouping(&mut self, scanner: &mut Scanner) {
+        expression();
+        consume(self, scanner, RightParen, "Expect ')' after expression.").unwrap_or_else(|e| {
+            self.handle_error(e);
+        });
     }
 
     pub fn end_compiler(&mut self) {
