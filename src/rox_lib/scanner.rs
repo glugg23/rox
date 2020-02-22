@@ -280,7 +280,7 @@ impl Default for Token {
     }
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TokenType {
     //Single-character tokens
     LeftParen,
@@ -383,5 +383,123 @@ impl Display for TokenType {
                 EOF => "EOF",
             }
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn scanner_advance() {
+        let mut scanner = Scanner::new("1");
+
+        let result = scanner.advance();
+
+        assert_eq!(result, '1');
+    }
+
+    #[test]
+    fn scanner_get_token() {
+        let mut scanner = Scanner::new("123");
+        scanner.advance();
+        scanner.advance();
+
+        let result = scanner.get_token();
+
+        assert_eq!(result, "12");
+    }
+
+    #[test]
+    fn scanner_peek() {
+        let scanner = Scanner::new("1");
+
+        let result = scanner.peek();
+
+        assert_eq!(result, '1');
+    }
+
+    #[test]
+    fn scanner_is_at_end() {
+        let mut scanner = Scanner::new("12");
+        assert_eq!(scanner.is_at_end(), false);
+
+        scanner.advance();
+        assert_eq!(scanner.is_at_end(), true);
+    }
+
+    #[test]
+    fn scanner_peek_next() {
+        let scanner = Scanner::new("12");
+
+        let result = scanner.peek_next();
+
+        assert_eq!(result, '2');
+    }
+
+    #[test]
+    fn scanner_peek_next_when_at_end() {
+        let scanner = Scanner::new("1");
+
+        let result = scanner.peek_next();
+
+        assert_eq!(result, '\0');
+    }
+
+    #[test]
+    fn scanner_skip_whitespace() {
+        let mut scanner = Scanner::new(" \t\r1");
+
+        scanner.skip_whitespace();
+
+        assert_eq!(scanner.current, 3);
+    }
+
+    #[test]
+    fn scanner_skip_whitespace_counts_newlines() {
+        let mut scanner = Scanner::new("\n\n1");
+
+        scanner.skip_whitespace();
+
+        assert_eq!(scanner.current, 2);
+        assert_eq!(scanner.line, 3);
+    }
+
+    #[test]
+    fn scanner_skip_whitespace_ignores_comments() {
+        let mut scanner = Scanner::new("//Hello world");
+
+        scanner.skip_whitespace();
+
+        assert_eq!(scanner.current, 12);
+    }
+
+    #[test]
+    fn scanner_skip_whitespace_ignores_comments_ending_in_new_line() {
+        let mut scanner = Scanner::new("//Hello world\n1");
+
+        scanner.skip_whitespace();
+
+        assert_eq!(scanner.current, 14);
+        assert_eq!(scanner.line, 2);
+    }
+
+    #[test]
+    fn scanner_skip_whitespace_does_not_skip_division() {
+        let mut scanner = Scanner::new("/ 0");
+
+        scanner.skip_whitespace();
+
+        assert_eq!(scanner.current, 0);
+    }
+
+    #[test]
+    fn scanner_number_ignores_dot_if_not_number() {
+        let mut scanner = Scanner::new("1.half");
+
+        let result = scanner.number();
+
+        assert_eq!(result.token_type, Number);
+        assert_eq!(result.lexeme, "1");
     }
 }
