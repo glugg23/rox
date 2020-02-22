@@ -52,7 +52,7 @@ impl Parser {
     fn binary(&mut self, scanner: &mut Scanner) {
         let operator_type = self.previous.token_type;
 
-        self.parse_precedence(scanner, get_next_rule(operator_type).precedence);
+        self.parse_precedence(scanner, get_rule(operator_type).precedence.next());
 
         match operator_type {
             Plus => self.emit_byte(OpCode::Add as u8),
@@ -205,6 +205,24 @@ enum Precedence {
     Primary,
 }
 
+impl Precedence {
+    pub fn next(&self) -> Self {
+        match self {
+            Precedence::None => Precedence::Assignment,
+            Precedence::Assignment => Precedence::Or,
+            Precedence::Or => Precedence::And,
+            Precedence::And => Precedence::Equality,
+            Precedence::Equality => Precedence::Comparison,
+            Precedence::Comparison => Precedence::Term,
+            Precedence::Term => Precedence::Factor,
+            Precedence::Factor => Precedence::Unary,
+            Precedence::Unary => Precedence::Call,
+            Precedence::Call => Precedence::Primary,
+            Precedence::Primary => panic!("Can not get next precedence for Precedence::Primary"),
+        }
+    }
+}
+
 type ParseFn = Option<fn(&mut Parser, &mut Scanner)>;
 
 struct ParseRule {
@@ -215,10 +233,6 @@ struct ParseRule {
 
 fn get_rule(token_type: TokenType) -> &'static ParseRule {
     &RULES[token_type as usize]
-}
-
-fn get_next_rule(token_type: TokenType) -> &'static ParseRule {
-    &RULES[(token_type as usize) + 1]
 }
 
 const RULES: &'static [ParseRule] = &[
