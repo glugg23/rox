@@ -59,8 +59,6 @@ impl VM {
                 Constant => {
                     let constant = self.read_constant();
                     self.push(constant);
-                    print_value(constant);
-                    println!();
                 }
                 Add => binary_op!(self, +),
                 Subtract => binary_op!(self, -),
