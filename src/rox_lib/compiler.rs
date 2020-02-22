@@ -37,7 +37,7 @@ impl Parser {
         self.emit_constant(value);
     }
 
-    fn unary(&mut self) {
+    fn unary(&mut self, _scanner: &mut Scanner) {
         let operator_type = self.previous.token_type;
 
         self.parse_precedence(Precedence::Unary);
@@ -159,3 +159,248 @@ enum Precedence {
     Call,       // . ()
     Primary,
 }
+
+type ParseFn = Option<fn(&mut Parser, &mut Scanner)>;
+
+struct ParseRule {
+    prefix: ParseFn,
+    infix: ParseFn,
+    precedence: Precedence,
+}
+
+const RULES: &'static [ParseRule] = &[
+    //LeftParen
+    ParseRule {
+        prefix: Some(|p, s| p.grouping(s)),
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //RightParen
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //LeftBrace
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //RightBrace
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Comma
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Dot
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Minus
+    ParseRule {
+        prefix: Some(|p, s| p.unary(s)),
+        infix: Some(|p, s| p.binary(s)),
+        precedence: Precedence::Term,
+    },
+    //Plus
+    ParseRule {
+        prefix: None,
+        infix: Some(|p, s| p.binary(s)),
+        precedence: Precedence::Term,
+    },
+    //SemiColon
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Slash
+    ParseRule {
+        prefix: None,
+        infix: Some(|p, s| p.binary(s)),
+        precedence: Precedence::Factor,
+    },
+    //Star
+    ParseRule {
+        prefix: None,
+        infix: Some(|p, s| p.binary(s)),
+        precedence: Precedence::Factor,
+    },
+    //Bang
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //BangEqual
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Equal
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //EqualEqual
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Greater
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //GreaterEqual
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Less
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //LessEqual
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Identifier
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //String
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Number
+    ParseRule {
+        prefix: Some(|p, _s| p.number()),
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //And
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Class
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Else
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //False
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //For
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Fun
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //If
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Nil
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Or
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Print
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Return
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Super
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //This
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //True
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //Var
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //While
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+    //EOF
+    ParseRule {
+        prefix: None,
+        infix: None,
+        precedence: Precedence::None,
+    },
+];
