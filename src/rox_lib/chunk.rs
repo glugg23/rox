@@ -28,6 +28,7 @@ impl Chunk {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum OpCode {
     Constant,
     Add,
@@ -68,5 +69,47 @@ impl Display for OpCode {
                 OpCode::Return => "RETURN",
             }
         )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn chunk_write() {
+        let mut chunk = Chunk::new();
+
+        chunk.write(0, 1);
+
+        assert_eq!(chunk.code[0], 0);
+        assert_eq!(chunk.lines[0], 1);
+    }
+
+    #[test]
+    fn chunk_add_constant() {
+        let mut chunk = Chunk::new();
+
+        let index = chunk.add_constant(1.5);
+
+        assert_eq!(index, 0);
+        assert_eq!(chunk.constants[0], 1.5);
+    }
+    
+    #[test]
+    fn opcode_from_byte() {
+        assert_eq!(OpCode::from(0), OpCode::Constant);
+        assert_eq!(OpCode::from(1), OpCode::Add);
+        assert_eq!(OpCode::from(2), OpCode::Subtract);
+        assert_eq!(OpCode::from(3), OpCode::Multiple);
+        assert_eq!(OpCode::from(4), OpCode::Divide);
+        assert_eq!(OpCode::from(5), OpCode::Negate);
+        assert_eq!(OpCode::from(6), OpCode::Return);
+    }
+
+    #[test]
+    #[should_panic(expected = "Unknown Opcode")]
+    fn opcode_from_invalid_byte_should_panic() {
+        OpCode::from(255);
     }
 }
