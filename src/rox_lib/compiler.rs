@@ -1,4 +1,5 @@
 use crate::chunk::{Chunk, OpCode};
+use crate::debug::disassemble_chuck;
 use crate::scanner::TokenType::*;
 use crate::scanner::{Scanner, Token, TokenType};
 use crate::{RoxError, Value};
@@ -117,6 +118,12 @@ impl Parser {
 
     pub fn end_compiler(&mut self) {
         self.emit_byte(OpCode::Return as u8);
+
+        if cfg!(debug_assertions) {
+            if !self.had_error {
+                disassemble_chuck(&self.current_chunk, "code");
+            }
+        }
     }
 
     pub fn handle_error(&mut self, error: RoxError) {
