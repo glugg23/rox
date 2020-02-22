@@ -25,7 +25,7 @@ pub struct Scanner {
     source: Vec<char>,
     start: usize,
     current: usize,
-    line: i32,
+    pub line: i32,
 }
 
 impl Scanner {
@@ -77,7 +77,15 @@ impl Scanner {
             _ => (),
         }
 
-        Err(RoxError::new("Unexpected character.", self.line))
+        Err(RoxError::new(
+            "Unexpected character.",
+            self.get_token(),
+            self.line,
+        ))
+    }
+
+    pub fn get_token(&self) -> String {
+        self.source[self.start..self.current].iter().collect()
     }
 
     fn advance(&mut self) -> char {
@@ -107,7 +115,11 @@ impl Scanner {
         }
 
         if self.is_at_end() {
-            return Err(RoxError::new("Unterminated string.", self.line));
+            return Err(RoxError::new(
+                "Unterminated string.",
+                self.get_token(),
+                self.line,
+            ));
         }
 
         //Consume double quote
@@ -241,23 +253,34 @@ impl Scanner {
     }
 }
 
-pub struct Token<'a> {
+#[derive(Clone)]
+pub struct Token {
     pub token_type: TokenType,
-    pub lexeme: &'a [char],
+    pub lexeme: String,
     pub line: i32,
 }
 
-impl<'a> Token<'a> {
-    pub fn new(scanner: &'a Scanner, token_type: TokenType) -> Self {
+impl Token {
+    pub fn new(scanner: &Scanner, token_type: TokenType) -> Self {
         Token {
             token_type,
-            lexeme: &scanner.source[scanner.start..scanner.current],
+            lexeme: scanner.get_token(),
             line: scanner.line,
         }
     }
 }
 
-#[derive(PartialEq)]
+impl Default for Token {
+    fn default() -> Self {
+        Token {
+            token_type: EOF,
+            lexeme: String::new(),
+            line: 0,
+        }
+    }
+}
+
+#[derive(Copy, Clone, PartialEq)]
 pub enum TokenType {
     //Single-character tokens
     LeftParen,

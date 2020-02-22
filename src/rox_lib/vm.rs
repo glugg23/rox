@@ -30,10 +30,14 @@ impl VM {
     }
 
     pub fn interpret(&mut self, source: &str) -> InterpretResult {
-        match compile(source) {
-            Ok(_) => InterpretResult::Ok,
-            Err(_e) => InterpretResult::CompileError,
-        }
+        self.chunk = match compile(source) {
+            Some(c) => c,
+            None => return InterpretResult::CompileError,
+        };
+
+        self.ip = 0;
+
+        self.run()
     }
 
     fn run(&mut self) -> InterpretResult {
@@ -57,8 +61,6 @@ impl VM {
                 Constant => {
                     let constant = self.read_constant();
                     self.push(constant);
-                    print_value(constant);
-                    println!();
                 }
                 Add => binary_op!(self, +),
                 Subtract => binary_op!(self, -),

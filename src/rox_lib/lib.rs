@@ -13,13 +13,15 @@ type Value = f64;
 #[derive(Debug)]
 pub struct RoxError {
     pub message: String,
+    pub token: String,
     pub line: i32,
 }
 
 impl RoxError {
-    pub fn new(message: &str, line: i32) -> Self {
+    pub fn new(message: &str, token: String, line: i32) -> Self {
         RoxError {
             message: message.to_string(),
+            token,
             line,
         }
     }
@@ -27,7 +29,11 @@ impl RoxError {
 
 impl Display for RoxError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "'{}' on line {}.", self.message, self.line)
+        write!(
+            f,
+            "[line {}] Error at '{}': {}",
+            self.line, self.token, self.message
+        )
     }
 }
 
