@@ -37,10 +37,10 @@ impl Parser {
         self.emit_constant(value);
     }
 
-    fn unary(&mut self, _scanner: &mut Scanner) {
+    fn unary(&mut self, scanner: &mut Scanner) {
         let operator_type = self.previous.token_type;
 
-        self.parse_precedence(Precedence::Unary);
+        self.parse_precedence(scanner, Precedence::Unary);
 
         match operator_type {
             Minus => self.emit_byte(OpCode::Negate as u8),
@@ -48,10 +48,10 @@ impl Parser {
         }
     }
 
-    fn binary(&mut self, _scanner: &mut Scanner) {
+    fn binary(&mut self, scanner: &mut Scanner) {
         let operator_type = self.previous.token_type;
 
-        self.parse_precedence(get_next_rule(operator_type).precedence);
+        self.parse_precedence(scanner, get_next_rule(operator_type).precedence);
 
         match operator_type {
             Plus => self.emit_byte(OpCode::Add as u8),
@@ -62,7 +62,31 @@ impl Parser {
         }
     }
 
-    fn parse_precedence(&mut self, precedence: Precedence) {}
+    fn parse_precedence(&mut self, scanner: &mut Scanner, precedence: Precedence) {
+        advance(self, scanner);
+
+        let prefix_rule = &get_rule(self.previous.token_type).prefix;
+
+        let prefix_rule = match prefix_rule {
+            Some(f) => f,
+            None => {
+                self.handle_error(RoxError::new(
+                    "Expect expression.",
+                    self.previous.lexeme.clone(),
+                    self.previous.line,
+                ));
+                return;
+            }
+        };
+
+        prefix_rule(self, scanner);
+
+        while precedence <= get_rule(self.current.token_type).precedence {
+            advance(self, scanner);
+            let infix_rule = &get_rule(self.previous.token_type).infix.unwrap();
+            infix_rule(self, scanner);
+        }
+    }
 
     fn emit_constant(&mut self, value: Value) {
         let constant = self.make_constant(value);
@@ -85,7 +109,7 @@ impl Parser {
     }
 
     fn grouping(&mut self, scanner: &mut Scanner) {
-        expression(self);
+        expression(self, scanner);
         consume(self, scanner, RightParen, "Expect ')' after expression.").unwrap_or_else(|e| {
             self.handle_error(e);
         });
@@ -109,7 +133,7 @@ pub fn compile(source: &str) -> Option<Chunk> {
     let mut parser = Parser::new();
 
     advance(&mut parser, &mut scanner);
-    expression(&mut parser);
+    expression(&mut parser, &mut scanner);
     consume(&mut parser, &mut scanner, EOF, "Expect end of expression.").unwrap_or_else(|e| {
         parser.handle_error(e);
     });
@@ -141,8 +165,8 @@ fn advance(parser: &mut Parser, scanner: &mut Scanner) {
     }
 }
 
-fn expression(parser: &mut Parser) {
-    parser.parse_precedence(Precedence::Assignment);
+fn expression(parser: &mut Parser, scanner: &mut Scanner) {
+    parser.parse_precedence(scanner, Precedence::Assignment);
 }
 
 fn consume(
