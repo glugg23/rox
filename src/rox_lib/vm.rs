@@ -35,6 +35,8 @@ impl VM {
             None => return InterpretResult::CompileError,
         };
 
+        self.ip = 0;
+
         self.run()
     }
 
