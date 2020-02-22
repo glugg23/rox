@@ -48,6 +48,20 @@ impl Parser {
         }
     }
 
+    fn binary(&mut self, _scanner: &mut Scanner) {
+        let operator_type = self.previous.token_type;
+
+        self.parse_precedence(get_next_rule(operator_type).precedence);
+
+        match operator_type {
+            Plus => self.emit_byte(OpCode::Add as u8),
+            Minus => self.emit_byte(OpCode::Subtract as u8),
+            Star => self.emit_byte(OpCode::Multiple as u8),
+            Slash => self.emit_byte(OpCode::Divide as u8),
+            _ => (),
+        }
+    }
+
     fn parse_precedence(&mut self, precedence: Precedence) {}
 
     fn emit_constant(&mut self, value: Value) {
@@ -145,7 +159,7 @@ fn consume(
     }
 }
 
-#[derive(PartialOrd, PartialEq)]
+#[derive(PartialOrd, PartialEq, Copy, Clone)]
 enum Precedence {
     None,
     Assignment, // =
@@ -166,6 +180,14 @@ struct ParseRule {
     prefix: ParseFn,
     infix: ParseFn,
     precedence: Precedence,
+}
+
+fn get_rule(token_type: TokenType) -> &'static ParseRule {
+    &RULES[token_type as usize]
+}
+
+fn get_next_rule(token_type: TokenType) -> &'static ParseRule {
+    &RULES[(token_type as usize) + 1]
 }
 
 const RULES: &'static [ParseRule] = &[
