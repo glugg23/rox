@@ -494,6 +494,28 @@ mod tests {
     }
 
     #[test]
+    #[ignore] //TODO: Investigate how to make this test pass
+    fn scanner_number() {
+        let mut scanner = Scanner::new("1");
+
+        let result = scanner.number();
+
+        assert_eq!(result.token_type, Number);
+        assert_eq!(result.lexeme, "1");
+    }
+
+    #[test]
+    #[ignore] //TODO: Investigate how to make this test pass
+    fn scanner_fractional_number() {
+        let mut scanner = Scanner::new("1.5");
+
+        let result = scanner.number();
+
+        assert_eq!(result.token_type, Number);
+        assert_eq!(result.lexeme, "1.5");
+    }
+
+    #[test]
     fn scanner_number_ignores_dot_if_not_number() {
         let mut scanner = Scanner::new("1.half");
 

@@ -95,7 +95,7 @@ mod tests {
         assert_eq!(index, 0);
         assert_eq!(chunk.constants[0], 1.5);
     }
-    
+
     #[test]
     fn opcode_from_byte() {
         assert_eq!(OpCode::from(0), OpCode::Constant);
