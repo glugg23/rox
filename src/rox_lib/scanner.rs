@@ -535,6 +535,16 @@ mod tests {
     }
 
     #[test]
+    fn scanner_number_ignores_dot_if_nothing_after() {
+        let mut scanner = Scanner::new("1.");
+
+        let result = scanner.number();
+
+        assert_eq!(result.token_type, Number);
+        assert_eq!(result.lexeme, "1");
+    }
+
+    #[test]
     fn scanner_string() {
         let mut scanner = Scanner::new("\"Hello World\"");
         scanner.advance();
