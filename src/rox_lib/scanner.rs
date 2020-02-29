@@ -603,4 +603,81 @@ mod tests {
 
         assert_eq!(result, false);
     }
+
+    #[test]
+    fn scanner_identifier() {
+        let mut scanner = Scanner::new("foo");
+
+        let result = scanner.identifier();
+
+        assert_eq!(result.token_type, Identifier);
+        assert_eq!(result.lexeme, "foo");
+    }
+
+    #[test]
+    fn scanner_identify_keywords() {
+        let mut scanner = Scanner::new("and");
+        let result = scanner.identifier();
+        assert_eq!(result.token_type, And);
+
+        let mut scanner = Scanner::new("class");
+        let result = scanner.identifier();
+        assert_eq!(result.token_type, Class);
+
+        let mut scanner = Scanner::new("else");
+        let result = scanner.identifier();
+        assert_eq!(result.token_type, Else);
+
+        let mut scanner = Scanner::new("false");
+        let result = scanner.identifier();
+        assert_eq!(result.token_type, False);
+
+        let mut scanner = Scanner::new("for");
+        let result = scanner.identifier();
+        assert_eq!(result.token_type, For);
+
+        let mut scanner = Scanner::new("fun");
+        let result = scanner.identifier();
+        assert_eq!(result.token_type, Fun);
+
+        let mut scanner = Scanner::new("if");
+        let result = scanner.identifier();
+        assert_eq!(result.token_type, If);
+
+        let mut scanner = Scanner::new("nil");
+        let result = scanner.identifier();
+        assert_eq!(result.token_type, Nil);
+
+        let mut scanner = Scanner::new("or");
+        let result = scanner.identifier();
+        assert_eq!(result.token_type, Or);
+
+        let mut scanner = Scanner::new("print");
+        let result = scanner.identifier();
+        assert_eq!(result.token_type, Print);
+
+        let mut scanner = Scanner::new("return");
+        let result = scanner.identifier();
+        assert_eq!(result.token_type, Return);
+
+        let mut scanner = Scanner::new("super");
+        let result = scanner.identifier();
+        assert_eq!(result.token_type, Super);
+
+        let mut scanner = Scanner::new("this");
+        let result = scanner.identifier();
+        assert_eq!(result.token_type, This);
+
+        let mut scanner = Scanner::new("true");
+        let result = scanner.identifier();
+        assert_eq!(result.token_type, True);
+
+        let mut scanner = Scanner::new("var");
+        let result = scanner.identifier();
+        assert_eq!(result.token_type, Var);
+
+        let mut scanner = Scanner::new("while");
+        let result = scanner.identifier();
+        assert_eq!(result.token_type, While);
+    }
 }
