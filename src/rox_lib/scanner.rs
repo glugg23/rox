@@ -136,7 +136,12 @@ impl Scanner {
         }
 
         //Look for fractional number
-        if self.peek() == Some('.') && self.peek_next().is_ascii_digit() {
+        if self.peek() == Some('.')
+            && match self.peek_next() {
+                Some(c) => c.is_ascii_digit(),
+                None => false,
+            }
+        {
             //Consume dot
             self.advance();
 
@@ -154,7 +159,7 @@ impl Scanner {
     fn identifier(&mut self) -> Token {
         while match self.peek() {
             Some(c) => is_alpha!(c) || c.is_ascii_digit(),
-            None => false
+            None => false,
         } {
             self.advance();
         }
@@ -232,7 +237,7 @@ impl Scanner {
                         self.advance();
                     }
                     '/' => {
-                        if self.peek_next() == '/' {
+                        if self.peek_next() == Some('/') {
                             while self.peek() != Some('\n') && !self.is_at_end() {
                                 self.advance();
                             }
@@ -254,10 +259,8 @@ impl Scanner {
         self.source.get(self.current).map(|&c| c)
     }
 
-    fn peek_next(&self) -> char {
-        self.source.get(self.current + 1).map_or('\0', |&c| {
-            c
-        })
+    fn peek_next(&self) -> Option<char> {
+        self.source.get(self.current + 1).map(|&c| c)
     }
 }
 
@@ -442,7 +445,7 @@ mod tests {
 
         let result = scanner.peek_next();
 
-        assert_eq!(result, '2');
+        assert_eq!(result, Some('2'));
     }
 
     #[test]
@@ -451,7 +454,7 @@ mod tests {
 
         let result = scanner.peek_next();
 
-        assert_eq!(result, '\0');
+        assert_eq!(result, None);
     }
 
     #[test]
