@@ -237,19 +237,19 @@ impl Scanner {
     }
 
     fn is_at_end(&self) -> bool {
-        self.current == self.source.len() - 1
+        self.current >= self.source.len()
     }
 
     fn peek(&self) -> char {
-        self.source[self.current]
+        self.source.get(self.current).map_or('\0', |&c| {
+            c
+        })
     }
 
     fn peek_next(&self) -> char {
-        if self.is_at_end() {
-            '\0' //Maybe return None here
-        } else {
-            self.source[self.current + 1] //And Some(char) here
-        }
+        self.source.get(self.current + 1).map_or('\0', |&c| {
+            c
+        })
     }
 }
 
@@ -421,7 +421,7 @@ mod tests {
 
     #[test]
     fn scanner_is_at_end() {
-        let mut scanner = Scanner::new("12");
+        let mut scanner = Scanner::new("1");
         assert_eq!(scanner.is_at_end(), false);
 
         scanner.advance();
@@ -471,7 +471,7 @@ mod tests {
 
         scanner.skip_whitespace();
 
-        assert_eq!(scanner.current, 12);
+        assert_eq!(scanner.current, 13);
     }
 
     #[test]
@@ -494,7 +494,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore] //TODO: Investigate how to make this test pass
     fn scanner_number() {
         let mut scanner = Scanner::new("1");
 
@@ -505,7 +504,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore] //TODO: Investigate how to make this test pass
     fn scanner_fractional_number() {
         let mut scanner = Scanner::new("1.5");
 
