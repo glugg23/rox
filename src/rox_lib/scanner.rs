@@ -680,4 +680,144 @@ mod tests {
         let result = scanner.identifier();
         assert_eq!(result.token_type, While);
     }
+
+    #[test]
+    fn scanner_scan_identifier() {
+        let mut scanner = Scanner::new("bar");
+
+        let result = scanner.scan_token().unwrap();
+
+        assert_eq!(result.token_type, Identifier);
+        assert_eq!(result.lexeme, "bar");
+    }
+
+    #[test]
+    fn scanner_scan_with_whitespace() {
+        let mut scanner = Scanner::new("    baz");
+
+        let result = scanner.scan_token().unwrap();
+
+        assert_eq!(result.token_type, Identifier);
+        assert_eq!(result.lexeme, "baz");
+    }
+
+    #[test]
+    fn scanner_scan_number() {
+        let mut scanner = Scanner::new("42");
+
+        let result = scanner.scan_token().unwrap();
+
+        assert_eq!(result.token_type, Number);
+        assert_eq!(result.lexeme, "42");
+    }
+
+    #[test]
+    fn scanner_scan_string() {
+        let mut scanner = Scanner::new("\"Hello World\"");
+
+        let result = scanner.scan_token().unwrap();
+
+        assert_eq!(result.token_type, RoxString);
+        assert_eq!(result.lexeme, "\"Hello World\"");
+    }
+
+    #[test]
+    fn scanner_scan_at_end() {
+        let mut scanner = Scanner::new("");
+
+        let result = scanner.scan_token().unwrap();
+
+        assert_eq!(result.token_type, EOF);
+    }
+
+    #[test]
+    fn scanner_scan_unexpected_character() {
+        let mut scanner = Scanner::new("🤔");
+
+        let result = scanner.scan_token();
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn scanner_scan_one_character_tokens() {
+        let mut scanner = Scanner::new("(");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, LeftParen);
+
+        let mut scanner = Scanner::new(")");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, RightParen);
+
+        let mut scanner = Scanner::new("{");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, LeftBrace);
+
+        let mut scanner = Scanner::new("}");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, RightBrace);
+
+        let mut scanner = Scanner::new(";");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, Semicolon);
+
+        let mut scanner = Scanner::new(",");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, Comma);
+
+        let mut scanner = Scanner::new(".");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, Dot);
+
+        let mut scanner = Scanner::new("-");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, Minus);
+
+        let mut scanner = Scanner::new("+");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, Plus);
+
+        let mut scanner = Scanner::new("/");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, Slash);
+
+        let mut scanner = Scanner::new("*");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, Star);
+
+        let mut scanner = Scanner::new("!");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, Bang);
+
+        let mut scanner = Scanner::new("=");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, Equal);
+
+        let mut scanner = Scanner::new("<");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, Less);
+
+        let mut scanner = Scanner::new(">");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, Greater);
+    }
+
+    #[test]
+    fn scanner_scan_two_character_tokens() {
+        let mut scanner = Scanner::new("!=");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, BangEqual);
+
+        let mut scanner = Scanner::new("==");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, EqualEqual);
+
+        let mut scanner = Scanner::new("<=");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, LessEqual);
+
+        let mut scanner = Scanner::new(">=");
+        let result = scanner.scan_token().unwrap();
+        assert_eq!(result.token_type, GreaterEqual);
+    }
 }
