@@ -576,4 +576,31 @@ mod tests {
 
         assert!(result.is_err());
     }
+
+    #[test]
+    fn scanner_match_token() {
+        let mut scanner = Scanner::new("1");
+
+        let result = scanner.match_token('1');
+
+        assert!(result);
+    }
+
+    #[test]
+    fn scanner_match_token_not_expected() {
+        let mut scanner = Scanner::new("1");
+
+        let result = scanner.match_token('2');
+
+        assert_eq!(result, false);
+    }
+
+    #[test]
+    fn scanner_match_token_when_at_end() {
+        let mut scanner = Scanner::new("");
+
+        let result = scanner.match_token('1');
+
+        assert_eq!(result, false);
+    }
 }
