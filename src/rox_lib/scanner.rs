@@ -533,4 +533,37 @@ mod tests {
         assert_eq!(result.token_type, Number);
         assert_eq!(result.lexeme, "1");
     }
+
+    #[test]
+    fn scanner_string() {
+        let mut scanner = Scanner::new("\"Hello World\"");
+        scanner.advance();
+
+        let result = scanner.string().unwrap();
+
+        assert_eq!(result.token_type, RoxString);
+        assert_eq!(result.lexeme, "\"Hello World\"");
+    }
+
+    #[test]
+    fn scanner_string_multiline() {
+        let mut scanner = Scanner::new("\"Hello\nWorld\"");
+        scanner.advance();
+
+        let result = scanner.string().unwrap();
+
+        assert_eq!(result.token_type, RoxString);
+        assert_eq!(result.lexeme, "\"Hello\nWorld\"");
+        assert_eq!(scanner.line, 2)
+    }
+
+    #[test]
+    fn scanner_string_unterminated() {
+        let mut scanner = Scanner::new("\"Hello World");
+        scanner.advance();
+
+        let result = scanner.string();
+
+        assert!(result.is_err());
+    }
 }
