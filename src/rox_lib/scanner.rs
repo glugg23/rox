@@ -1,7 +1,5 @@
 use crate::scanner::TokenType::*;
 use crate::RoxError;
-use std::fmt;
-use std::fmt::{Display, Formatter};
 
 macro_rules! two_char_token {
     ($scanner:ident, $token:expr, $first:path, $second:path) => {{
@@ -341,60 +339,6 @@ pub enum TokenType {
 
     //Other
     EOF,
-}
-
-impl Display for TokenType {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                LeftParen => "LeftParen",
-                RightParen => "RightParen",
-                LeftBrace => "LeftBrace",
-                RightBrace => "RightBrace",
-                Comma => "Comma",
-                Dot => "Dot",
-                Minus => "Minus",
-                Plus => "Plus",
-                Semicolon => "Semicolon",
-                Slash => "Slash",
-                Star => "Star",
-
-                Bang => "Bang",
-                BangEqual => "BangEqual",
-                Equal => "Equal",
-                EqualEqual => "EqualEqual",
-                Greater => "Greater",
-                GreaterEqual => "GreaterEqual",
-                Less => "Less",
-                LessEqual => "LessEqual",
-
-                Identifier => "Identifier",
-                RoxString => "String",
-                Number => "Number",
-
-                And => "And",
-                Class => "Class",
-                Else => "Else",
-                False => "False",
-                For => "For",
-                Fun => "Fun",
-                If => "If",
-                Nil => "Nil",
-                Or => "Or",
-                Print => "Print",
-                Return => "Return",
-                Super => "Super",
-                This => "This",
-                True => "True",
-                Var => "Var",
-                While => "While",
-
-                EOF => "EOF",
-            }
-        )
-    }
 }
 
 #[cfg(test)]
