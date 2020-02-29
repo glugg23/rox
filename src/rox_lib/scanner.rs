@@ -107,8 +107,8 @@ impl Scanner {
     }
 
     fn string(&mut self) -> Result<Token, RoxError> {
-        while self.peek() != '"' && !self.is_at_end() {
-            if self.peek() == '\n' {
+        while self.peek() != Some('"') && !self.is_at_end() {
+            if self.peek() == Some('\n') {
                 self.line += 1;
             }
             self.advance();
@@ -128,16 +128,22 @@ impl Scanner {
     }
 
     fn number(&mut self) -> Token {
-        while self.peek().is_ascii_digit() {
+        while match self.peek() {
+            Some(c) => c.is_ascii_digit(),
+            None => false,
+        } {
             self.advance();
         }
 
         //Look for fractional number
-        if self.peek() == '.' && self.peek_next().is_ascii_digit() {
+        if self.peek() == Some('.') && self.peek_next().is_ascii_digit() {
             //Consume dot
             self.advance();
 
-            while self.peek().is_ascii_digit() {
+            while match self.peek() {
+                Some(c) => c.is_ascii_digit(),
+                None => false,
+            } {
                 self.advance();
             }
         }
@@ -146,7 +152,10 @@ impl Scanner {
     }
 
     fn identifier(&mut self) -> Token {
-        while is_alpha!(self.peek()) || self.peek().is_ascii_digit() {
+        while match self.peek() {
+            Some(c) => is_alpha!(c) || c.is_ascii_digit(),
+            None => false
+        } {
             self.advance();
         }
 
@@ -213,25 +222,26 @@ impl Scanner {
                 return;
             }
 
-            let c = self.peek();
-            match c {
-                ' ' | '\r' | '\t' => {
-                    self.advance();
-                }
-                '\n' => {
-                    self.line += 1;
-                    self.advance();
-                }
-                '/' => {
-                    if self.peek_next() == '/' {
-                        while self.peek() != '\n' && !self.is_at_end() {
-                            self.advance();
-                        }
-                    } else {
-                        return;
+            if let Some(c) = self.peek() {
+                match c {
+                    ' ' | '\r' | '\t' => {
+                        self.advance();
                     }
+                    '\n' => {
+                        self.line += 1;
+                        self.advance();
+                    }
+                    '/' => {
+                        if self.peek_next() == '/' {
+                            while self.peek() != Some('\n') && !self.is_at_end() {
+                                self.advance();
+                            }
+                        } else {
+                            return;
+                        }
+                    }
+                    _ => return,
                 }
-                _ => return,
             }
         }
     }
@@ -240,10 +250,8 @@ impl Scanner {
         self.current >= self.source.len()
     }
 
-    fn peek(&self) -> char {
-        self.source.get(self.current).map_or('\0', |&c| {
-            c
-        })
+    fn peek(&self) -> Option<char> {
+        self.source.get(self.current).map(|&c| c)
     }
 
     fn peek_next(&self) -> char {
@@ -416,7 +424,7 @@ mod tests {
 
         let result = scanner.peek();
 
-        assert_eq!(result, '1');
+        assert_eq!(result, Some('1'));
     }
 
     #[test]
