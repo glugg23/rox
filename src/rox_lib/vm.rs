@@ -105,3 +105,57 @@ pub enum InterpretResult {
     CompileError,
     RuntimeError,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn vm_push() {
+        let mut vm = VM::new();
+
+        vm.push(1.0);
+
+        assert_eq!(vm.stack.len(), 1);
+        assert_eq!(vm.stack[0], 1.0);
+    }
+
+    #[test]
+    fn vm_pop() {
+        let mut vm = VM::new();
+        vm.push(1.0);
+
+        let result = vm.pop();
+
+        assert_eq!(vm.stack.len(), 0);
+        assert_eq!(result, 1.0);
+    }
+
+    #[test]
+    fn vm_read_byte() {
+        let mut vm = VM::new();
+        vm.chunk = Chunk {
+            code: vec![0],
+            constants: Vec::new(),
+            lines: Vec::new(),
+        };
+
+        let result = vm.read_byte();
+
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn vm_read_constant() {
+        let mut vm = VM::new();
+        vm.chunk = Chunk {
+            code: vec![0],
+            constants: vec![1.0],
+            lines: Vec::new(),
+        };
+
+        let result = vm.read_constant();
+
+        assert_eq!(result, 1.0);
+    }
+}
