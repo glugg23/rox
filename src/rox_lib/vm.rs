@@ -100,6 +100,7 @@ impl VM {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub enum InterpretResult {
     Ok,
     CompileError,
@@ -157,5 +158,117 @@ mod tests {
         let result = vm.read_constant();
 
         assert_eq!(result, 1.0);
+    }
+
+    #[test]
+    fn vm_run_constant() {
+        let mut vm = VM::new();
+        vm.chunk = Chunk {
+            code: vec![Constant as u8, 0, Return as u8],
+            constants: vec![1.0],
+            lines: vec![1, 1, 1],
+        };
+
+        let result = vm.run();
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_run_negate() {
+        let mut vm = VM::new();
+        vm.chunk = Chunk {
+            code: vec![Constant as u8, 0, Negate as u8, Return as u8],
+            constants: vec![1.0],
+            lines: vec![1, 1, 1, 1],
+        };
+
+        let result = vm.run();
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_run_add() {
+        let mut vm = VM::new();
+        vm.chunk = Chunk {
+            code: vec![
+                Constant as u8,
+                0,
+                Constant as u8,
+                1,
+                Add as u8,
+                Return as u8,
+            ],
+            constants: vec![1.0, 2.0],
+            lines: vec![1, 1, 1, 1, 1, 1],
+        };
+
+        let result = vm.run();
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_run_subtract() {
+        let mut vm = VM::new();
+        vm.chunk = Chunk {
+            code: vec![
+                Constant as u8,
+                0,
+                Constant as u8,
+                1,
+                Subtract as u8,
+                Return as u8,
+            ],
+            constants: vec![1.0, 2.0],
+            lines: vec![1, 1, 1, 1, 1, 1],
+        };
+
+        let result = vm.run();
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_run_multiply() {
+        let mut vm = VM::new();
+        vm.chunk = Chunk {
+            code: vec![
+                Constant as u8,
+                0,
+                Constant as u8,
+                1,
+                Multiple as u8,
+                Return as u8,
+            ],
+            constants: vec![1.0, 2.0],
+            lines: vec![1, 1, 1, 1, 1, 1],
+        };
+
+        let result = vm.run();
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_run_divide() {
+        let mut vm = VM::new();
+        vm.chunk = Chunk {
+            code: vec![
+                Constant as u8,
+                0,
+                Constant as u8,
+                1,
+                Divide as u8,
+                Return as u8,
+            ],
+            constants: vec![1.0, 2.0],
+            lines: vec![1, 1, 1, 1, 1, 1],
+        };
+
+        let result = vm.run();
+
+        assert_eq!(result, InterpretResult::Ok);
     }
 }
