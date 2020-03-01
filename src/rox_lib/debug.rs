@@ -44,5 +44,5 @@ fn constant_instruction(instruction: OpCode, chunk: &Chunk, offset: usize) -> us
 
 pub fn print_value(value: Value) {
     //Might be possible to remove this function call, depending on how value is implemented further
-    print!("'{}'", value);
+    print!("{}", value);
 }
