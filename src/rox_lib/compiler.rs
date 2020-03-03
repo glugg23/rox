@@ -190,7 +190,7 @@ fn consume(
     }
 }
 
-#[derive(PartialOrd, PartialEq, Copy, Clone)]
+#[derive(PartialOrd, PartialEq, Copy, Clone, Debug)]
 enum Precedence {
     None,
     Assignment, // =
@@ -471,3 +471,145 @@ const RULES: &'static [ParseRule] = &[
         precedence: Precedence::None,
     },
 ];
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::compiler::Precedence::*;
+
+    #[test]
+    fn compiler_advance() {
+        let mut parser = Parser::new();
+        let mut scanner = Scanner::new("1");
+
+        advance(&mut parser, &mut scanner);
+
+        assert_eq!(parser.current.token_type, Number);
+    }
+
+    #[test]
+    fn compiler_advance_with_error() {
+        let mut parser = Parser::new();
+        let mut scanner = Scanner::new("\"Hello World");
+
+        advance(&mut parser, &mut scanner);
+
+        assert!(parser.had_error);
+        assert!(parser.panic_mode);
+    }
+
+    #[test]
+    fn compiler_consume() {
+        let mut parser = Parser::new();
+        let mut scanner = Scanner::new("");
+        parser.current = Token::new(&scanner, EOF);
+
+        let result = consume(&mut parser, &mut scanner, EOF, "Error");
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn compiler_consume_error() {
+        let mut parser = Parser::new();
+        let mut scanner = Scanner::new("");
+        parser.current = Token::new(&scanner, Number);
+
+        let result = consume(&mut parser, &mut scanner, EOF, "Error");
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn compiler_compile() {
+        let result = compile("1 + 1");
+
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn compiler_compile_with_error() {
+        let result = compile("(-1");
+        assert!(result.is_none());
+
+        let result = compile("1 +");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn precedence_next() {
+        assert_eq!(None.next(), Assignment);
+        assert_eq!(Assignment.next(), Precedence::Or);
+        assert_eq!(Precedence::Or.next(), Precedence::And);
+        assert_eq!(Precedence::And.next(), Equality);
+        assert_eq!(Equality.next(), Comparison);
+        assert_eq!(Comparison.next(), Term);
+        assert_eq!(Term.next(), Factor);
+        assert_eq!(Factor.next(), Unary);
+        assert_eq!(Unary.next(), Call);
+        assert_eq!(Call.next(), Primary);
+    }
+
+    #[test]
+    #[should_panic(expected = "Can not get next precedence for Precedence::Primary")]
+    fn precedence_next_error() {
+        Primary.next();
+    }
+
+    #[test]
+    fn parser_emit_byte() {
+        let mut parser = Parser::new();
+
+        parser.emit_byte(0);
+
+        assert_eq!(parser.current_chunk.code[0], 0);
+    }
+
+    #[test]
+    fn parser_emit_byte2() {
+        let mut parser = Parser::new();
+
+        parser.emit_bytes(0, 1);
+
+        assert_eq!(parser.current_chunk.code[0], 0);
+        assert_eq!(parser.current_chunk.code[1], 1);
+    }
+
+    #[test]
+    fn parser_make_constant() {
+        let mut parser = Parser::new();
+
+        let result = parser.make_constant(1.0);
+
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn parser_make_constant_max_num() {
+        let mut parser = Parser::new();
+        parser.current_chunk.constants = vec![0.0; std::u8::MAX as usize + 1];
+
+        parser.make_constant(1.0);
+
+        assert!(parser.had_error);
+    }
+
+    #[test]
+    fn parser_emit_constant() {
+        let mut parser = Parser::new();
+
+        parser.emit_constant(1.0);
+
+        assert_eq!(parser.current_chunk.code[0], OpCode::Constant as u8);
+        assert_eq!(parser.current_chunk.constants[0], 1.0);
+    }
+
+    #[test]
+    fn parser_end_compiler() {
+        let mut parser = Parser::new();
+
+        parser.end_compiler();
+
+        assert_eq!(parser.current_chunk.code[0], OpCode::Return as u8);
+    }
+}
