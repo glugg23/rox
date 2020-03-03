@@ -521,6 +521,22 @@ mod tests {
     }
 
     #[test]
+    fn compiler_compile() {
+        let result = compile("1 + 1");
+
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn compiler_compile_with_error() {
+        let result = compile("(-1");
+        assert!(result.is_none());
+
+        let result = compile("1 +");
+        assert!(result.is_none());
+    }
+
+    #[test]
     fn precedence_next() {
         assert_eq!(None.next(), Assignment);
         assert_eq!(Assignment.next(), Precedence::Or);

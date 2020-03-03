@@ -271,4 +271,22 @@ mod tests {
 
         assert_eq!(result, InterpretResult::Ok);
     }
+
+    #[test]
+    fn vm_interpret() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("42 * (1 - (1 / 0))");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_compile_error() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("+1");
+
+        assert_eq!(result, InterpretResult::CompileError);
+    }
 }
