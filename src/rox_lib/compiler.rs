@@ -539,4 +539,61 @@ mod tests {
     fn precedence_next_error() {
         Primary.next();
     }
+
+    #[test]
+    fn parser_emit_byte() {
+        let mut parser = Parser::new();
+
+        parser.emit_byte(0);
+
+        assert_eq!(parser.current_chunk.code[0], 0);
+    }
+
+    #[test]
+    fn parser_emit_byte2() {
+        let mut parser = Parser::new();
+
+        parser.emit_bytes(0, 1);
+
+        assert_eq!(parser.current_chunk.code[0], 0);
+        assert_eq!(parser.current_chunk.code[1], 1);
+    }
+
+    #[test]
+    fn parser_make_constant() {
+        let mut parser = Parser::new();
+
+        let result = parser.make_constant(1.0);
+
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn parser_make_constant_max_num() {
+        let mut parser = Parser::new();
+        parser.current_chunk.constants = vec![0.0; std::u8::MAX as usize + 1];
+
+        parser.make_constant(1.0);
+
+        assert!(parser.had_error);
+    }
+
+    #[test]
+    fn parser_emit_constant() {
+        let mut parser = Parser::new();
+
+        parser.emit_constant(1.0);
+
+        assert_eq!(parser.current_chunk.code[0], OpCode::Constant as u8);
+        assert_eq!(parser.current_chunk.constants[0], 1.0);
+    }
+
+    #[test]
+    fn parser_end_compiler() {
+        let mut parser = Parser::new();
+
+        parser.end_compiler();
+
+        assert_eq!(parser.current_chunk.code[0], OpCode::Return as u8);
+    }
 }
