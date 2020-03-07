@@ -31,6 +31,9 @@ impl Chunk {
 #[derive(Debug, PartialEq)]
 pub enum OpCode {
     Constant,
+    Nil,
+    True,
+    False,
     Add,
     Subtract,
     Multiple,
@@ -43,12 +46,15 @@ impl From<u8> for OpCode {
     fn from(byte: u8) -> Self {
         match byte {
             0 => OpCode::Constant,
-            1 => OpCode::Add,
-            2 => OpCode::Subtract,
-            3 => OpCode::Multiple,
-            4 => OpCode::Divide,
-            5 => OpCode::Negate,
-            6 => OpCode::Return,
+            1 => OpCode::Nil,
+            2 => OpCode::True,
+            3 => OpCode::False,
+            4 => OpCode::Add,
+            5 => OpCode::Subtract,
+            6 => OpCode::Multiple,
+            7 => OpCode::Divide,
+            8 => OpCode::Negate,
+            9 => OpCode::Return,
             _ => panic!("Unknown Opcode"),
         }
     }
@@ -61,6 +67,9 @@ impl Display for OpCode {
             "{}",
             match self {
                 OpCode::Constant => "CONSTANT",
+                OpCode::Nil => "NIL",
+                OpCode::True => "TRUE",
+                OpCode::False => "FALSE",
                 OpCode::Add => "ADD",
                 OpCode::Subtract => "SUBTRACT",
                 OpCode::Multiple => "MULTIPLE",
@@ -99,12 +108,15 @@ mod tests {
     #[test]
     fn opcode_from_byte() {
         assert_eq!(OpCode::from(0), OpCode::Constant);
-        assert_eq!(OpCode::from(1), OpCode::Add);
-        assert_eq!(OpCode::from(2), OpCode::Subtract);
-        assert_eq!(OpCode::from(3), OpCode::Multiple);
-        assert_eq!(OpCode::from(4), OpCode::Divide);
-        assert_eq!(OpCode::from(5), OpCode::Negate);
-        assert_eq!(OpCode::from(6), OpCode::Return);
+        assert_eq!(OpCode::from(1), OpCode::Nil);
+        assert_eq!(OpCode::from(2), OpCode::True);
+        assert_eq!(OpCode::from(3), OpCode::False);
+        assert_eq!(OpCode::from(4), OpCode::Add);
+        assert_eq!(OpCode::from(5), OpCode::Subtract);
+        assert_eq!(OpCode::from(6), OpCode::Multiple);
+        assert_eq!(OpCode::from(7), OpCode::Divide);
+        assert_eq!(OpCode::from(8), OpCode::Negate);
+        assert_eq!(OpCode::from(9), OpCode::Return);
     }
 
     #[test]

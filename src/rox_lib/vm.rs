@@ -72,6 +72,9 @@ impl VM {
                     let constant = self.read_constant();
                     self.push(constant);
                 }
+                Nil => self.push(Value::Nil),
+                True => self.push(Value::Boolean(true)),
+                False => self.push(Value::Boolean(false)),
                 Add => binary_op!(self, Value::Number, +),
                 Subtract => binary_op!(self, Value::Number, -),
                 Multiple => binary_op!(self, Value::Number, *),
@@ -83,8 +86,8 @@ impl VM {
                     }
                     _ => {
                         self.runtime_error("Operand must be a number.");
-                        return InterpretResult::RuntimeError
-                    },
+                        return InterpretResult::RuntimeError;
+                    }
                 },
                 Return => {
                     print!("{}", self.pop());
@@ -120,7 +123,10 @@ impl VM {
     }
 
     fn runtime_error(&mut self, message: &str) {
-        eprintln!("{}\n[line {}] in script", message, self.chunk.lines[self.ip]);
+        eprintln!(
+            "{}\n[line {}] in script",
+            message, self.chunk.lines[self.ip]
+        );
         self.stack.clear();
     }
 }

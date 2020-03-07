@@ -33,6 +33,15 @@ impl Parser {
         self.emit_byte(byte2);
     }
 
+    fn literal(&mut self) {
+        match self.previous.token_type {
+            False => self.emit_byte(OpCode::False as u8),
+            Nil => self.emit_byte(OpCode::Nil as u8),
+            True => self.emit_byte(OpCode::True as u8),
+            _ => (),
+        };
+    }
+
     fn number(&mut self) {
         let value = f64::from_str(&self.previous.lexeme).unwrap(); //TODO: Don't use unwrap here
         self.emit_constant(Value::Number(value));
@@ -388,7 +397,7 @@ const RULES: &'static [ParseRule] = &[
     },
     //False
     ParseRule {
-        prefix: None,
+        prefix: Some(|p, _s| p.literal()),
         infix: None,
         precedence: Precedence::None,
     },
@@ -412,7 +421,7 @@ const RULES: &'static [ParseRule] = &[
     },
     //Nil
     ParseRule {
-        prefix: None,
+        prefix: Some(|p, _s| p.literal()),
         infix: None,
         precedence: Precedence::None,
     },
@@ -448,7 +457,7 @@ const RULES: &'static [ParseRule] = &[
     },
     //True
     ParseRule {
-        prefix: None,
+        prefix: Some(|p, _s| p.literal()),
         infix: None,
         precedence: Precedence::None,
     },
