@@ -1,15 +1,25 @@
 use crate::chunk::OpCode::*;
 use crate::chunk::{Chunk, OpCode};
 use crate::compiler::compile;
-use crate::debug::{disassemble_instruction, print_value};
+use crate::debug::disassemble_instruction;
 use crate::Value;
 
 macro_rules! binary_op {
-    ($vm:ident, $op:tt) => (
+    ($vm:ident, $type:expr, $op:tt) => (
         {
-            let b = $vm.pop();
-            let a = $vm.pop();
-            $vm.push(a $op b);
+            if let Value::Number(_) = $vm.peek(0) {
+                if let Value::Number(_) = $vm.peek(1) {
+                    let b: f64 = $vm.pop().into();
+                    let a: f64 = $vm.pop().into();
+                    $vm.push($type(a $op b));
+                } else {
+                    $vm.runtime_error("Operand must be a number.");
+                    return InterpretResult::RuntimeError;
+                }
+            } else {
+                $vm.runtime_error("Operand must be a number.");
+                return InterpretResult::RuntimeError;
+            }
         };
     )
 }
@@ -47,7 +57,7 @@ impl VM {
 
                 for slot in &self.stack {
                     print!("[ ");
-                    print_value(*slot);
+                    print!("{}", slot);
                     print!(" ]");
                 }
                 println!();
@@ -62,16 +72,22 @@ impl VM {
                     let constant = self.read_constant();
                     self.push(constant);
                 }
-                Add => binary_op!(self, +),
-                Subtract => binary_op!(self, -),
-                Multiple => binary_op!(self, *),
-                Divide => binary_op!(self, /),
-                Negate => {
-                    let negated = -self.pop();
-                    self.push(negated);
-                }
+                Add => binary_op!(self, Value::Number, +),
+                Subtract => binary_op!(self, Value::Number, -),
+                Multiple => binary_op!(self, Value::Number, *),
+                Divide => binary_op!(self, Value::Number, /),
+                Negate => match self.peek(0) {
+                    Value::Number(_) => {
+                        let n: f64 = self.pop().into();
+                        self.push(Value::Number(-n))
+                    }
+                    _ => {
+                        self.runtime_error("Operand must be a number.");
+                        return InterpretResult::RuntimeError
+                    },
+                },
                 Return => {
-                    print_value(self.pop());
+                    print!("{}", self.pop());
                     println!();
                     return InterpretResult::Ok;
                 }
@@ -87,7 +103,7 @@ impl VM {
 
     fn read_constant(&mut self) -> Value {
         let index = self.read_byte() as usize;
-        self.chunk.constants[index]
+        self.chunk.constants[index].clone()
     }
 
     fn push(&mut self, value: Value) {
@@ -97,6 +113,15 @@ impl VM {
     fn pop(&mut self) -> Value {
         //Unwrap for now
         self.stack.pop().unwrap()
+    }
+
+    fn peek(&self, distance: usize) -> &Value {
+        &self.stack[(self.stack.len() - 1) - distance]
+    }
+
+    fn runtime_error(&mut self, message: &str) {
+        eprintln!("{}\n[line {}] in script", message, self.chunk.lines[self.ip]);
+        self.stack.clear();
     }
 }
 
@@ -115,21 +140,21 @@ mod tests {
     fn vm_push() {
         let mut vm = VM::new();
 
-        vm.push(1.0);
+        vm.push(Value::Number(1.0));
 
         assert_eq!(vm.stack.len(), 1);
-        assert_eq!(vm.stack[0], 1.0);
+        assert_eq!(vm.stack[0], Value::Number(1.0));
     }
 
     #[test]
     fn vm_pop() {
         let mut vm = VM::new();
-        vm.push(1.0);
+        vm.push(Value::Number(1.0));
 
         let result = vm.pop();
 
         assert_eq!(vm.stack.len(), 0);
-        assert_eq!(result, 1.0);
+        assert_eq!(result, Value::Number(1.0));
     }
 
     #[test]
@@ -151,13 +176,13 @@ mod tests {
         let mut vm = VM::new();
         vm.chunk = Chunk {
             code: vec![0],
-            constants: vec![1.0],
+            constants: vec![Value::Number(1.0)],
             lines: Vec::new(),
         };
 
         let result = vm.read_constant();
 
-        assert_eq!(result, 1.0);
+        assert_eq!(result, Value::Number(1.0));
     }
 
     #[test]
@@ -165,7 +190,7 @@ mod tests {
         let mut vm = VM::new();
         vm.chunk = Chunk {
             code: vec![Constant as u8, 0, Return as u8],
-            constants: vec![1.0],
+            constants: vec![Value::Number(1.0)],
             lines: vec![1, 1, 1],
         };
 
@@ -179,7 +204,7 @@ mod tests {
         let mut vm = VM::new();
         vm.chunk = Chunk {
             code: vec![Constant as u8, 0, Negate as u8, Return as u8],
-            constants: vec![1.0],
+            constants: vec![Value::Number(1.0)],
             lines: vec![1, 1, 1, 1],
         };
 
@@ -200,7 +225,7 @@ mod tests {
                 Add as u8,
                 Return as u8,
             ],
-            constants: vec![1.0, 2.0],
+            constants: vec![Value::Number(1.0), Value::Number(2.0)],
             lines: vec![1, 1, 1, 1, 1, 1],
         };
 
@@ -221,7 +246,7 @@ mod tests {
                 Subtract as u8,
                 Return as u8,
             ],
-            constants: vec![1.0, 2.0],
+            constants: vec![Value::Number(1.0), Value::Number(2.0)],
             lines: vec![1, 1, 1, 1, 1, 1],
         };
 
@@ -242,7 +267,7 @@ mod tests {
                 Multiple as u8,
                 Return as u8,
             ],
-            constants: vec![1.0, 2.0],
+            constants: vec![Value::Number(1.0), Value::Number(2.0)],
             lines: vec![1, 1, 1, 1, 1, 1],
         };
 
@@ -263,7 +288,7 @@ mod tests {
                 Divide as u8,
                 Return as u8,
             ],
-            constants: vec![1.0, 2.0],
+            constants: vec![Value::Number(1.0), Value::Number(2.0)],
             lines: vec![1, 1, 1, 1, 1, 1],
         };
 

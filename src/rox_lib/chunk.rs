@@ -90,10 +90,10 @@ mod tests {
     fn chunk_add_constant() {
         let mut chunk = Chunk::new();
 
-        let index = chunk.add_constant(1.5);
+        let index = chunk.add_constant(Value::Number(1.5));
 
         assert_eq!(index, 0);
-        assert_eq!(chunk.constants[0], 1.5);
+        assert_eq!(chunk.constants[0], Value::Number(1.5));
     }
 
     #[test]

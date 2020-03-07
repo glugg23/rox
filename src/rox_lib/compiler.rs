@@ -35,7 +35,7 @@ impl Parser {
 
     fn number(&mut self) {
         let value = f64::from_str(&self.previous.lexeme).unwrap(); //TODO: Don't use unwrap here
-        self.emit_constant(value);
+        self.emit_constant(Value::Number(value));
     }
 
     fn unary(&mut self, scanner: &mut Scanner) {
@@ -579,7 +579,7 @@ mod tests {
     fn parser_make_constant() {
         let mut parser = Parser::new();
 
-        let result = parser.make_constant(1.0);
+        let result = parser.make_constant(Value::Number(1.0));
 
         assert_eq!(result, 0);
     }
@@ -587,9 +587,9 @@ mod tests {
     #[test]
     fn parser_make_constant_max_num() {
         let mut parser = Parser::new();
-        parser.current_chunk.constants = vec![0.0; std::u8::MAX as usize + 1];
+        parser.current_chunk.constants = vec![Value::Number(0.0); std::u8::MAX as usize + 1];
 
-        parser.make_constant(1.0);
+        parser.make_constant(Value::Number(1.0));
 
         assert!(parser.had_error);
     }
@@ -598,10 +598,10 @@ mod tests {
     fn parser_emit_constant() {
         let mut parser = Parser::new();
 
-        parser.emit_constant(1.0);
+        parser.emit_constant(Value::Number(1.0));
 
         assert_eq!(parser.current_chunk.code[0], OpCode::Constant as u8);
-        assert_eq!(parser.current_chunk.constants[0], 1.0);
+        assert_eq!(parser.current_chunk.constants[0], Value::Number(1.0));
     }
 
     #[test]
