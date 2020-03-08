@@ -53,6 +53,7 @@ impl Parser {
         self.parse_precedence(scanner, Precedence::Unary);
 
         match operator_type {
+            Bang => self.emit_byte(OpCode::Not as u8),
             Minus => self.emit_byte(OpCode::Negate as u8),
             _ => (),
         }
@@ -313,7 +314,7 @@ const RULES: &'static [ParseRule] = &[
     },
     //Bang
     ParseRule {
-        prefix: None,
+        prefix: Some(|p, s| p.unary(s)),
         infix: None,
         precedence: Precedence::None,
     },

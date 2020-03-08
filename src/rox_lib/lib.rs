@@ -15,6 +15,16 @@ pub enum Value {
     Nil,
 }
 
+impl Value {
+    pub fn is_falsey(&self) -> bool {
+        match self {
+            Value::Boolean(b) => !*b,
+            Value::Nil => true,
+            _ => false,
+        }
+    }
+}
+
 impl Display for Value {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {

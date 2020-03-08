@@ -79,6 +79,10 @@ impl VM {
                 Subtract => binary_op!(self, Value::Number, -),
                 Multiple => binary_op!(self, Value::Number, *),
                 Divide => binary_op!(self, Value::Number, /),
+                Not => {
+                    let value = self.pop().is_falsey();
+                    self.push(Value::Boolean(value));
+                }
                 Negate => match self.peek(0) {
                     Value::Number(_) => {
                         let n: f64 = self.pop().into();

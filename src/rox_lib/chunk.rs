@@ -38,6 +38,7 @@ pub enum OpCode {
     Subtract,
     Multiple,
     Divide,
+    Not,
     Negate,
     Return,
 }
@@ -53,8 +54,9 @@ impl From<u8> for OpCode {
             5 => OpCode::Subtract,
             6 => OpCode::Multiple,
             7 => OpCode::Divide,
-            8 => OpCode::Negate,
-            9 => OpCode::Return,
+            8 => OpCode::Not,
+            9 => OpCode::Negate,
+            10 => OpCode::Return,
             _ => panic!("Unknown Opcode"),
         }
     }
@@ -74,6 +76,7 @@ impl Display for OpCode {
                 OpCode::Subtract => "SUBTRACT",
                 OpCode::Multiple => "MULTIPLE",
                 OpCode::Divide => "DIVIDE",
+                OpCode::Not => "NOT",
                 OpCode::Negate => "NEGATE",
                 OpCode::Return => "RETURN",
             }
@@ -115,8 +118,9 @@ mod tests {
         assert_eq!(OpCode::from(5), OpCode::Subtract);
         assert_eq!(OpCode::from(6), OpCode::Multiple);
         assert_eq!(OpCode::from(7), OpCode::Divide);
-        assert_eq!(OpCode::from(8), OpCode::Negate);
-        assert_eq!(OpCode::from(9), OpCode::Return);
+        assert_eq!(OpCode::from(8), OpCode::Not);
+        assert_eq!(OpCode::from(9), OpCode::Negate);
+        assert_eq!(OpCode::from(10), OpCode::Return);
     }
 
     #[test]
