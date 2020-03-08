@@ -2,7 +2,7 @@ use crate::chunk::OpCode::*;
 use crate::chunk::{Chunk, OpCode};
 use crate::compiler::compile;
 use crate::debug::disassemble_instruction;
-use crate::Value;
+use crate::value::Value;
 
 macro_rules! binary_op {
     ($vm:ident, $type:expr, $op:tt) => (

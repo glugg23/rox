@@ -2,7 +2,8 @@ use crate::chunk::{Chunk, OpCode};
 use crate::debug::disassemble_chuck;
 use crate::scanner::TokenType::*;
 use crate::scanner::{Scanner, Token, TokenType};
-use crate::{RoxError, Value};
+use crate::value::Value;
+use crate::RoxError;
 use std::str::FromStr;
 
 pub struct Parser {
