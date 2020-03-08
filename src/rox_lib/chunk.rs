@@ -34,6 +34,9 @@ pub enum OpCode {
     Nil,
     True,
     False,
+    Equal,
+    Greater,
+    Less,
     Add,
     Subtract,
     Multiple,
@@ -50,13 +53,16 @@ impl From<u8> for OpCode {
             1 => OpCode::Nil,
             2 => OpCode::True,
             3 => OpCode::False,
-            4 => OpCode::Add,
-            5 => OpCode::Subtract,
-            6 => OpCode::Multiple,
-            7 => OpCode::Divide,
-            8 => OpCode::Not,
-            9 => OpCode::Negate,
-            10 => OpCode::Return,
+            4 => OpCode::Equal,
+            5 => OpCode::Greater,
+            6 => OpCode::Less,
+            7 => OpCode::Add,
+            8 => OpCode::Subtract,
+            9 => OpCode::Multiple,
+            10 => OpCode::Divide,
+            11 => OpCode::Not,
+            12 => OpCode::Negate,
+            13 => OpCode::Return,
             _ => panic!("Unknown Opcode"),
         }
     }
@@ -72,6 +78,9 @@ impl Display for OpCode {
                 OpCode::Nil => "NIL",
                 OpCode::True => "TRUE",
                 OpCode::False => "FALSE",
+                OpCode::Equal => "EQUAL",
+                OpCode::Greater => "GREATER",
+                OpCode::Less => "LESS",
                 OpCode::Add => "ADD",
                 OpCode::Subtract => "SUBTRACT",
                 OpCode::Multiple => "MULTIPLE",
@@ -114,13 +123,16 @@ mod tests {
         assert_eq!(OpCode::from(1), OpCode::Nil);
         assert_eq!(OpCode::from(2), OpCode::True);
         assert_eq!(OpCode::from(3), OpCode::False);
-        assert_eq!(OpCode::from(4), OpCode::Add);
-        assert_eq!(OpCode::from(5), OpCode::Subtract);
-        assert_eq!(OpCode::from(6), OpCode::Multiple);
-        assert_eq!(OpCode::from(7), OpCode::Divide);
-        assert_eq!(OpCode::from(8), OpCode::Not);
-        assert_eq!(OpCode::from(9), OpCode::Negate);
-        assert_eq!(OpCode::from(10), OpCode::Return);
+        assert_eq!(OpCode::from(4), OpCode::Equal);
+        assert_eq!(OpCode::from(5), OpCode::Greater);
+        assert_eq!(OpCode::from(6), OpCode::Less);
+        assert_eq!(OpCode::from(7), OpCode::Add);
+        assert_eq!(OpCode::from(8), OpCode::Subtract);
+        assert_eq!(OpCode::from(9), OpCode::Multiple);
+        assert_eq!(OpCode::from(10), OpCode::Divide);
+        assert_eq!(OpCode::from(11), OpCode::Not);
+        assert_eq!(OpCode::from(12), OpCode::Negate);
+        assert_eq!(OpCode::from(13), OpCode::Return);
     }
 
     #[test]

@@ -75,6 +75,13 @@ impl VM {
                 Nil => self.push(Value::Nil),
                 True => self.push(Value::Boolean(true)),
                 False => self.push(Value::Boolean(false)),
+                Equal => {
+                    let b = self.pop();
+                    let a = self.pop();
+                    self.push(Value::Boolean(a == b));
+                }
+                Greater => binary_op!(self, Value::Boolean, >),
+                Less => binary_op!(self, Value::Boolean, <),
                 Add => binary_op!(self, Value::Number, +),
                 Subtract => binary_op!(self, Value::Number, -),
                 Multiple => binary_op!(self, Value::Number, *),

@@ -65,6 +65,12 @@ impl Parser {
         self.parse_precedence(scanner, get_rule(operator_type).precedence.next());
 
         match operator_type {
+            BangEqual => self.emit_bytes(OpCode::Equal as u8, OpCode::Not as u8),
+            EqualEqual => self.emit_byte(OpCode::Equal as u8),
+            Greater => self.emit_byte(OpCode::Greater as u8),
+            GreaterEqual => self.emit_bytes(OpCode::Less as u8, OpCode::Not as u8),
+            Less => self.emit_byte(OpCode::Less as u8),
+            LessEqual => self.emit_bytes(OpCode::Greater as u8, OpCode::Not as u8),
             Plus => self.emit_byte(OpCode::Add as u8),
             Minus => self.emit_byte(OpCode::Subtract as u8),
             Star => self.emit_byte(OpCode::Multiple as u8),
@@ -321,8 +327,8 @@ const RULES: &'static [ParseRule] = &[
     //BangEqual
     ParseRule {
         prefix: None,
-        infix: None,
-        precedence: Precedence::None,
+        infix: Some(|p, s| p.binary(s)),
+        precedence: Precedence::Equality,
     },
     //Equal
     ParseRule {
@@ -333,32 +339,32 @@ const RULES: &'static [ParseRule] = &[
     //EqualEqual
     ParseRule {
         prefix: None,
-        infix: None,
-        precedence: Precedence::None,
+        infix: Some(|p, s| p.binary(s)),
+        precedence: Precedence::Equality,
     },
     //Greater
     ParseRule {
         prefix: None,
-        infix: None,
-        precedence: Precedence::None,
+        infix: Some(|p, s| p.binary(s)),
+        precedence: Precedence::Comparison,
     },
     //GreaterEqual
     ParseRule {
         prefix: None,
-        infix: None,
-        precedence: Precedence::None,
+        infix: Some(|p, s| p.binary(s)),
+        precedence: Precedence::Comparison,
     },
     //Less
     ParseRule {
         prefix: None,
-        infix: None,
-        precedence: Precedence::None,
+        infix: Some(|p, s| p.binary(s)),
+        precedence: Precedence::Comparison,
     },
     //LessEqual
     ParseRule {
         prefix: None,
-        infix: None,
-        precedence: Precedence::None,
+        infix: Some(|p, s| p.binary(s)),
+        precedence: Precedence::Comparison,
     },
     //Identifier
     ParseRule {

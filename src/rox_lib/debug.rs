@@ -22,9 +22,8 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
     let instruction = OpCode::from(chunk.code[offset]);
     match instruction {
         Constant => constant_instruction(instruction, chunk, offset),
-        Nil | True | False | Add | Subtract | Multiple | Divide | Not | Negate | Return => {
-            simple_instruction(instruction, offset)
-        }
+        Nil | True | False | Equal | Greater | Less | Add | Subtract | Multiple | Divide | Not
+        | Negate | Return => simple_instruction(instruction, offset),
     }
 }
 
