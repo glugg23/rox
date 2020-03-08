@@ -36,3 +36,39 @@ impl Into<f64> for Value {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn value_is_falsey() {
+        assert!(Value::Nil.is_falsey());
+        assert!(Value::Boolean(false).is_falsey());
+    }
+
+    #[test]
+    fn value_is_truthy() {
+        assert_eq!(Value::Boolean(true).is_falsey(), false);
+        assert_eq!(Value::Number(0.0).is_falsey(), false);
+    }
+
+    #[test]
+    fn value_into_valid_number() {
+        let result: f64 = Value::Number(1.0).into();
+
+        assert_eq!(result, 1.0);
+    }
+
+    #[test]
+    #[should_panic]
+    fn value_into_nil_panics() {
+        let _: f64 = Value::Nil.into();
+    }
+
+    #[test]
+    #[should_panic]
+    fn value_into_bool_panics() {
+        let _: f64 = Value::Boolean(false).into();
+    }
+}
