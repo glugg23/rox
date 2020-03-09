@@ -2,7 +2,8 @@ use crate::chunk::{Chunk, OpCode};
 use crate::debug::disassemble_chuck;
 use crate::scanner::TokenType::*;
 use crate::scanner::{Scanner, Token, TokenType};
-use crate::{RoxError, Value};
+use crate::value::Value;
+use crate::RoxError;
 use std::str::FromStr;
 
 pub struct Parser {
@@ -33,9 +34,18 @@ impl Parser {
         self.emit_byte(byte2);
     }
 
+    fn literal(&mut self) {
+        match self.previous.token_type {
+            False => self.emit_byte(OpCode::False as u8),
+            Nil => self.emit_byte(OpCode::Nil as u8),
+            True => self.emit_byte(OpCode::True as u8),
+            _ => (),
+        };
+    }
+
     fn number(&mut self) {
         let value = f64::from_str(&self.previous.lexeme).unwrap(); //TODO: Don't use unwrap here
-        self.emit_constant(value);
+        self.emit_constant(Value::Number(value));
     }
 
     fn unary(&mut self, scanner: &mut Scanner) {
@@ -44,6 +54,7 @@ impl Parser {
         self.parse_precedence(scanner, Precedence::Unary);
 
         match operator_type {
+            Bang => self.emit_byte(OpCode::Not as u8),
             Minus => self.emit_byte(OpCode::Negate as u8),
             _ => (),
         }
@@ -55,6 +66,12 @@ impl Parser {
         self.parse_precedence(scanner, get_rule(operator_type).precedence.next());
 
         match operator_type {
+            BangEqual => self.emit_bytes(OpCode::Equal as u8, OpCode::Not as u8),
+            EqualEqual => self.emit_byte(OpCode::Equal as u8),
+            Greater => self.emit_byte(OpCode::Greater as u8),
+            GreaterEqual => self.emit_bytes(OpCode::Less as u8, OpCode::Not as u8),
+            Less => self.emit_byte(OpCode::Less as u8),
+            LessEqual => self.emit_bytes(OpCode::Greater as u8, OpCode::Not as u8),
             Plus => self.emit_byte(OpCode::Add as u8),
             Minus => self.emit_byte(OpCode::Subtract as u8),
             Star => self.emit_byte(OpCode::Multiple as u8),
@@ -304,15 +321,15 @@ const RULES: &'static [ParseRule] = &[
     },
     //Bang
     ParseRule {
-        prefix: None,
+        prefix: Some(|p, s| p.unary(s)),
         infix: None,
         precedence: Precedence::None,
     },
     //BangEqual
     ParseRule {
         prefix: None,
-        infix: None,
-        precedence: Precedence::None,
+        infix: Some(|p, s| p.binary(s)),
+        precedence: Precedence::Equality,
     },
     //Equal
     ParseRule {
@@ -323,32 +340,32 @@ const RULES: &'static [ParseRule] = &[
     //EqualEqual
     ParseRule {
         prefix: None,
-        infix: None,
-        precedence: Precedence::None,
+        infix: Some(|p, s| p.binary(s)),
+        precedence: Precedence::Equality,
     },
     //Greater
     ParseRule {
         prefix: None,
-        infix: None,
-        precedence: Precedence::None,
+        infix: Some(|p, s| p.binary(s)),
+        precedence: Precedence::Comparison,
     },
     //GreaterEqual
     ParseRule {
         prefix: None,
-        infix: None,
-        precedence: Precedence::None,
+        infix: Some(|p, s| p.binary(s)),
+        precedence: Precedence::Comparison,
     },
     //Less
     ParseRule {
         prefix: None,
-        infix: None,
-        precedence: Precedence::None,
+        infix: Some(|p, s| p.binary(s)),
+        precedence: Precedence::Comparison,
     },
     //LessEqual
     ParseRule {
         prefix: None,
-        infix: None,
-        precedence: Precedence::None,
+        infix: Some(|p, s| p.binary(s)),
+        precedence: Precedence::Comparison,
     },
     //Identifier
     ParseRule {
@@ -388,7 +405,7 @@ const RULES: &'static [ParseRule] = &[
     },
     //False
     ParseRule {
-        prefix: None,
+        prefix: Some(|p, _s| p.literal()),
         infix: None,
         precedence: Precedence::None,
     },
@@ -412,7 +429,7 @@ const RULES: &'static [ParseRule] = &[
     },
     //Nil
     ParseRule {
-        prefix: None,
+        prefix: Some(|p, _s| p.literal()),
         infix: None,
         precedence: Precedence::None,
     },
@@ -448,7 +465,7 @@ const RULES: &'static [ParseRule] = &[
     },
     //True
     ParseRule {
-        prefix: None,
+        prefix: Some(|p, _s| p.literal()),
         infix: None,
         precedence: Precedence::None,
     },
@@ -579,7 +596,7 @@ mod tests {
     fn parser_make_constant() {
         let mut parser = Parser::new();
 
-        let result = parser.make_constant(1.0);
+        let result = parser.make_constant(Value::Number(1.0));
 
         assert_eq!(result, 0);
     }
@@ -587,9 +604,9 @@ mod tests {
     #[test]
     fn parser_make_constant_max_num() {
         let mut parser = Parser::new();
-        parser.current_chunk.constants = vec![0.0; std::u8::MAX as usize + 1];
+        parser.current_chunk.constants = vec![Value::Number(0.0); std::u8::MAX as usize + 1];
 
-        parser.make_constant(1.0);
+        parser.make_constant(Value::Number(1.0));
 
         assert!(parser.had_error);
     }
@@ -598,10 +615,10 @@ mod tests {
     fn parser_emit_constant() {
         let mut parser = Parser::new();
 
-        parser.emit_constant(1.0);
+        parser.emit_constant(Value::Number(1.0));
 
         assert_eq!(parser.current_chunk.code[0], OpCode::Constant as u8);
-        assert_eq!(parser.current_chunk.constants[0], 1.0);
+        assert_eq!(parser.current_chunk.constants[0], Value::Number(1.0));
     }
 
     #[test]
