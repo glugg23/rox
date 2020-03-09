@@ -241,6 +241,24 @@ mod tests {
     }
 
     #[test]
+    fn vm_interpret_not() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("!true");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_not_equal() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("true != false");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
     fn vm_interpret_greater() {
         let mut vm = VM::new();
 
@@ -256,6 +274,35 @@ mod tests {
         let result = vm.interpret("1 >= 1");
 
         assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_less() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("2 < 1");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_less_equal() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("1 <= 1");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_binary_op_wrong_types() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("1 + true");
+        assert_eq!(result, InterpretResult::RuntimeError);
+
+        let result = vm.interpret("false / 0");
+        assert_eq!(result, InterpretResult::RuntimeError);
     }
 
     #[test]
