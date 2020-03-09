@@ -203,132 +203,94 @@ mod tests {
     }
 
     #[test]
-    fn vm_run_constant() {
-        let mut vm = VM::new();
-        vm.chunk = Chunk {
-            code: vec![Constant as u8, 0, Return as u8],
-            constants: vec![Value::Number(1.0)],
-            lines: vec![1, 1, 1],
-        };
-
-        let result = vm.run();
-
-        assert_eq!(result, InterpretResult::Ok);
-    }
-
-    #[test]
-    fn vm_run_negate() {
-        let mut vm = VM::new();
-        vm.chunk = Chunk {
-            code: vec![Constant as u8, 0, Negate as u8, Return as u8],
-            constants: vec![Value::Number(1.0)],
-            lines: vec![1, 1, 1, 1],
-        };
-
-        let result = vm.run();
-
-        assert_eq!(result, InterpretResult::Ok);
-    }
-
-    #[test]
-    fn vm_run_add() {
-        let mut vm = VM::new();
-        vm.chunk = Chunk {
-            code: vec![
-                Constant as u8,
-                0,
-                Constant as u8,
-                1,
-                Add as u8,
-                Return as u8,
-            ],
-            constants: vec![Value::Number(1.0), Value::Number(2.0)],
-            lines: vec![1, 1, 1, 1, 1, 1],
-        };
-
-        let result = vm.run();
-
-        assert_eq!(result, InterpretResult::Ok);
-    }
-
-    #[test]
-    fn vm_run_subtract() {
-        let mut vm = VM::new();
-        vm.chunk = Chunk {
-            code: vec![
-                Constant as u8,
-                0,
-                Constant as u8,
-                1,
-                Subtract as u8,
-                Return as u8,
-            ],
-            constants: vec![Value::Number(1.0), Value::Number(2.0)],
-            lines: vec![1, 1, 1, 1, 1, 1],
-        };
-
-        let result = vm.run();
-
-        assert_eq!(result, InterpretResult::Ok);
-    }
-
-    #[test]
-    fn vm_run_multiply() {
-        let mut vm = VM::new();
-        vm.chunk = Chunk {
-            code: vec![
-                Constant as u8,
-                0,
-                Constant as u8,
-                1,
-                Multiple as u8,
-                Return as u8,
-            ],
-            constants: vec![Value::Number(1.0), Value::Number(2.0)],
-            lines: vec![1, 1, 1, 1, 1, 1],
-        };
-
-        let result = vm.run();
-
-        assert_eq!(result, InterpretResult::Ok);
-    }
-
-    #[test]
-    fn vm_run_divide() {
-        let mut vm = VM::new();
-        vm.chunk = Chunk {
-            code: vec![
-                Constant as u8,
-                0,
-                Constant as u8,
-                1,
-                Divide as u8,
-                Return as u8,
-            ],
-            constants: vec![Value::Number(1.0), Value::Number(2.0)],
-            lines: vec![1, 1, 1, 1, 1, 1],
-        };
-
-        let result = vm.run();
-
-        assert_eq!(result, InterpretResult::Ok);
-    }
-
-    #[test]
-    fn vm_interpret() {
-        let mut vm = VM::new();
-
-        let result = vm.interpret("42 * (1 - (1 / 0))");
-
-        assert_eq!(result, InterpretResult::Ok);
-    }
-
-    #[test]
     fn vm_interpret_compile_error() {
         let mut vm = VM::new();
 
         let result = vm.interpret("+1");
 
         assert_eq!(result, InterpretResult::CompileError);
+    }
+
+    #[test]
+    fn vm_interpret_negate() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("-1");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_negate_not_number() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("-false");
+
+        assert_eq!(result, InterpretResult::RuntimeError);
+    }
+
+    #[test]
+    fn vm_interpret_equal() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("true == nil");
+        assert_eq!(result, InterpretResult::Ok);
+
+        let result = vm.interpret("1.0 == 1.0");
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_greater() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("2 > 1");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_greater_equal() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("1 >= 1");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_add() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("1 + 2");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_subtract() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("1 - 0.5");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_multiply() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("1 * 10");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_divide() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("1 / 0");
+
+        assert_eq!(result, InterpretResult::Ok);
     }
 }
