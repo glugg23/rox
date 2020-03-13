@@ -7,15 +7,10 @@ use crate::value::Value;
 macro_rules! binary_op {
     ($vm:ident, $type:expr, $op:tt) => (
         {
-            if let Value::Number(_) = $vm.peek(0) {
-                if let Value::Number(_) = $vm.peek(1) {
-                    let b: f64 = $vm.pop().into();
-                    let a: f64 = $vm.pop().into();
-                    $vm.push($type(a $op b));
-                } else {
-                    $vm.runtime_error("Operand must be a number.");
-                    return InterpretResult::RuntimeError;
-                }
+            if matches!($vm.peek(0), Value::Number(_)) && matches!($vm.peek(1), Value::Number(_)) {
+                let b: f64 = $vm.pop().into();
+                let a: f64 = $vm.pop().into();
+                $vm.push($type(a $op b));
             } else {
                 $vm.runtime_error("Operand must be a number.");
                 return InterpretResult::RuntimeError;
