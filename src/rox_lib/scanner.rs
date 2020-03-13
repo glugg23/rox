@@ -126,27 +126,16 @@ impl Scanner {
     }
 
     fn number(&mut self) -> Token {
-        while match self.peek() {
-            Some(c) => c.is_ascii_digit(),
-            None => false,
-        } {
+        while matches!(self.peek(), Some(c) if c.is_ascii_digit()) {
             self.advance();
         }
 
         //Look for fractional number
-        if self.peek() == Some('.')
-            && match self.peek_next() {
-                Some(c) => c.is_ascii_digit(),
-                None => false,
-            }
-        {
+        if self.peek() == Some('.') && matches!(self.peek_next(), Some(c) if c.is_ascii_digit()) {
             //Consume dot
             self.advance();
 
-            while match self.peek() {
-                Some(c) => c.is_ascii_digit(),
-                None => false,
-            } {
+            while matches!(self.peek(), Some(c) if c.is_ascii_digit()) {
                 self.advance();
             }
         }
@@ -155,10 +144,7 @@ impl Scanner {
     }
 
     fn identifier(&mut self) -> Token {
-        while match self.peek() {
-            Some(c) => is_alpha!(c) || c.is_ascii_digit(),
-            None => false,
-        } {
+        while matches!(self.peek(), Some(c) if is_alpha!(c) || c.is_ascii_digit()) {
             self.advance();
         }
 
