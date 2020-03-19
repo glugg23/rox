@@ -1,5 +1,6 @@
 use crate::chunk::{Chunk, OpCode};
 use crate::debug::disassemble_chuck;
+use crate::object::ObjectType;
 use crate::scanner::TokenType::*;
 use crate::scanner::{Scanner, Token, TokenType};
 use crate::value::Value;
@@ -46,6 +47,12 @@ impl Parser {
     fn number(&mut self) {
         let value = f64::from_str(&self.previous.lexeme).unwrap(); //TODO: Don't use unwrap here
         self.emit_constant(Value::Number(value));
+    }
+
+    fn string(&mut self) {
+        self.emit_constant(Value::Object(ObjectType::String(Box::from(
+            self.previous.lexeme.as_str()[1..self.previous.lexeme.len() - 1].to_owned(),
+        ))));
     }
 
     fn unary(&mut self, scanner: &mut Scanner) {
@@ -375,7 +382,7 @@ const RULES: &'static [ParseRule] = &[
     },
     //String
     ParseRule {
-        prefix: None,
+        prefix: Some(|p, _s| p.string()),
         infix: None,
         precedence: Precedence::None,
     },
