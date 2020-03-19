@@ -332,6 +332,24 @@ mod tests {
     }
 
     #[test]
+    fn vm_interpret_add_strings() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("\"hello\" + \" \" + \"world\"");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_can_not_add_string_and_number() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("\"hello\" + 123");
+
+        assert_eq!(result, InterpretResult::RuntimeError);
+    }
+
+    #[test]
     fn vm_interpret_subtract() {
         let mut vm = VM::new();
 
