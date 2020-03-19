@@ -2,6 +2,7 @@ use crate::chunk::OpCode::*;
 use crate::chunk::{Chunk, OpCode};
 use crate::compiler::compile;
 use crate::debug::disassemble_instruction;
+use crate::object::ObjectType;
 use crate::value::Value;
 
 macro_rules! binary_op {
@@ -77,7 +78,28 @@ impl VM {
                 }
                 Greater => binary_op!(self, Value::Boolean, >),
                 Less => binary_op!(self, Value::Boolean, <),
-                Add => binary_op!(self, Value::Number, +),
+                Add => {
+                    if matches!(self.peek(0), Value::Object(ObjectType::String(_)))
+                        && matches!(self.peek(1), Value::Object(ObjectType::String(_)))
+                    {
+                        let b = self.pop();
+                        let a = self.pop();
+
+                        self.push(Value::Object(ObjectType::String(Box::from(
+                            a.to_string() + &b.to_string(),
+                        ))));
+                    } else if matches!(self.peek(0), Value::Number(_))
+                        && matches!(self.peek(1), Value::Number(_))
+                    {
+                        let b: f64 = self.pop().into();
+                        let a: f64 = self.pop().into();
+
+                        self.push(Value::Number(a + b));
+                    } else {
+                        self.runtime_error("Operands must be two number or two strings.");
+                        return InterpretResult::RuntimeError;
+                    }
+                }
                 Subtract => binary_op!(self, Value::Number, -),
                 Multiple => binary_op!(self, Value::Number, *),
                 Divide => binary_op!(self, Value::Number, /),
@@ -307,6 +329,24 @@ mod tests {
         let result = vm.interpret("1 + 2");
 
         assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_add_strings() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("\"hello\" + \" \" + \"world\"");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_can_not_add_string_and_number() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("\"hello\" + 123");
+
+        assert_eq!(result, InterpretResult::RuntimeError);
     }
 
     #[test]

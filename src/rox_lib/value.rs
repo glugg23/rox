@@ -1,3 +1,4 @@
+use crate::object::ObjectType;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
@@ -5,6 +6,7 @@ use std::fmt::{Display, Formatter};
 pub enum Value {
     Number(f64),
     Boolean(bool),
+    Object(ObjectType),
     Nil,
 }
 
@@ -19,6 +21,7 @@ impl Display for Value {
         match self {
             Value::Number(n) => write!(f, "{}", n),
             Value::Boolean(b) => write!(f, "{}", b),
+            Value::Object(o) => write!(f, "{}", o),
             Value::Nil => write!(f, "nil"),
         }
     }
