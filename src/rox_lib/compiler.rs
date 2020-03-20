@@ -35,6 +35,10 @@ impl Parser {
         self.emit_byte(byte2);
     }
 
+    pub fn check(&self, token_type: TokenType) -> bool {
+        self.current.token_type == token_type
+    }
+
     fn literal(&mut self) {
         match self.previous.token_type {
             False => self.emit_byte(OpCode::False as u8),
@@ -164,10 +168,10 @@ pub fn compile(source: &str) -> Option<Chunk> {
     let mut parser = Parser::new();
 
     advance(&mut parser, &mut scanner);
-    expression(&mut parser, &mut scanner);
-    consume(&mut parser, &mut scanner, EOF, "Expect end of expression.").unwrap_or_else(|e| {
-        parser.handle_error(e);
-    });
+
+    while !match_token(&mut parser, &mut scanner, EOF) {
+        declaration(&mut parser, &mut scanner);
+    }
 
     parser.end_compiler();
 
@@ -200,6 +204,24 @@ fn expression(parser: &mut Parser, scanner: &mut Scanner) {
     parser.parse_precedence(scanner, Precedence::Assignment);
 }
 
+fn declaration(parser: &mut Parser, scanner: &mut Scanner) {
+    statement(parser, scanner);
+}
+
+fn statement(parser: &mut Parser, scanner: &mut Scanner) {
+    if match_token(parser, scanner, Print) {
+        print_statement(parser, scanner);
+    }
+}
+
+fn print_statement(parser: &mut Parser, scanner: &mut Scanner) {
+    expression(parser, scanner);
+    consume(parser, scanner, Semicolon, "Expect ';' after value.").unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+    parser.emit_byte(OpCode::Print as u8);
+}
+
 fn consume(
     parser: &mut Parser,
     scanner: &mut Scanner,
@@ -212,6 +234,15 @@ fn consume(
     } else {
         Err(RoxError::new(message, scanner.get_token(), scanner.line))
     }
+}
+
+fn match_token(parser: &mut Parser, scanner: &mut Scanner, token_type: TokenType) -> bool {
+    return if !parser.check(token_type) {
+        false
+    } else {
+        advance(parser, scanner);
+        true
+    };
 }
 
 #[derive(PartialOrd, PartialEq, Copy, Clone, Debug)]

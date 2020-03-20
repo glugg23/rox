@@ -117,9 +117,10 @@ impl VM {
                         return InterpretResult::RuntimeError;
                     }
                 },
+                Print => {
+                    println!("{}", self.pop());
+                },
                 Return => {
-                    print!("{}", self.pop());
-                    println!();
                     return InterpretResult::Ok;
                 }
             };

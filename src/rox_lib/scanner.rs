@@ -91,7 +91,7 @@ impl Scanner {
         self.source[self.current - 1]
     }
 
-    fn match_token(&mut self, expected: char) -> bool {
+    pub fn match_token(&mut self, expected: char) -> bool {
         if self.is_at_end() {
             return false;
         }

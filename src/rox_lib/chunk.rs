@@ -43,6 +43,7 @@ pub enum OpCode {
     Divide,
     Not,
     Negate,
+    Print,
     Return,
 }
 
@@ -62,7 +63,8 @@ impl From<u8> for OpCode {
             10 => OpCode::Divide,
             11 => OpCode::Not,
             12 => OpCode::Negate,
-            13 => OpCode::Return,
+            13 => OpCode::Print,
+            14 => OpCode::Return,
             _ => panic!("Unknown Opcode"),
         }
     }
@@ -87,6 +89,7 @@ impl Display for OpCode {
                 OpCode::Divide => "DIVIDE",
                 OpCode::Not => "NOT",
                 OpCode::Negate => "NEGATE",
+                OpCode::Print => "PRINT",
                 OpCode::Return => "RETURN",
             }
         )
