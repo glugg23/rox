@@ -211,6 +211,8 @@ fn declaration(parser: &mut Parser, scanner: &mut Scanner) {
 fn statement(parser: &mut Parser, scanner: &mut Scanner) {
     if match_token(parser, scanner, Print) {
         print_statement(parser, scanner);
+    } else {
+        expression_statement(parser, scanner);
     }
 }
 
@@ -220,6 +222,14 @@ fn print_statement(parser: &mut Parser, scanner: &mut Scanner) {
         parser.handle_error(e);
     });
     parser.emit_byte(OpCode::Print as u8);
+}
+
+fn expression_statement(parser: &mut Parser, scanner: &mut Scanner) {
+    expression(parser, scanner);
+    consume(parser, scanner, Semicolon, "Expect ';' after expression.").unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+    parser.emit_byte(OpCode::Pop as u8);
 }
 
 fn consume(

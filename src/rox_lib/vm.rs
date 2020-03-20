@@ -71,6 +71,9 @@ impl VM {
                 Nil => self.push(Value::Nil),
                 True => self.push(Value::Boolean(true)),
                 False => self.push(Value::Boolean(false)),
+                Pop => {
+                    self.pop();
+                }
                 Equal => {
                     let b = self.pop();
                     let a = self.pop();
@@ -119,7 +122,7 @@ impl VM {
                 },
                 Print => {
                     println!("{}", self.pop());
-                },
+                }
                 Return => {
                     return InterpretResult::Ok;
                 }
