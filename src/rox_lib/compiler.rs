@@ -206,6 +206,10 @@ fn expression(parser: &mut Parser, scanner: &mut Scanner) {
 
 fn declaration(parser: &mut Parser, scanner: &mut Scanner) {
     statement(parser, scanner);
+
+    if parser.panic_mode {
+        synchronise(parser, scanner);
+    }
 }
 
 fn statement(parser: &mut Parser, scanner: &mut Scanner) {
@@ -253,6 +257,23 @@ fn match_token(parser: &mut Parser, scanner: &mut Scanner, token_type: TokenType
         advance(parser, scanner);
         true
     };
+}
+
+fn synchronise(parser: &mut Parser, scanner: &mut Scanner) {
+    parser.panic_mode = false;
+
+    while parser.current.token_type != EOF {
+        if parser.previous.token_type == Semicolon {
+            return;
+        }
+
+        match parser.current.token_type {
+            Class | Fun | Var | For | If | While | Print | Return => return,
+            _ => (),
+        }
+
+        advance(parser, scanner);
+    }
 }
 
 #[derive(PartialOrd, PartialEq, Copy, Clone, Debug)]
