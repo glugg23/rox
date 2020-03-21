@@ -21,7 +21,7 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
 
     let instruction = OpCode::from(chunk.code[offset]);
     match instruction {
-        Constant | DefineGlobal => constant_instruction(instruction, chunk, offset),
+        Constant | GetGlobal | DefineGlobal => constant_instruction(instruction, chunk, offset),
         Nil | True | False | Pop | Equal | Greater | Less | Add | Subtract | Multiple | Divide
         | Not | Negate | Print | Return => simple_instruction(instruction, offset),
     }

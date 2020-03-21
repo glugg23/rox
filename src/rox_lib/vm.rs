@@ -77,6 +77,17 @@ impl VM {
                 Pop => {
                     self.pop();
                 }
+                GetGlobal => {
+                    let name = self.read_constant().to_string();
+                    let value = match self.globals.get(&name) {
+                        Some(v) => v.clone(),
+                        None => {
+                            self.runtime_error(format!("Undefined variable '{}'.", name).as_str());
+                            return InterpretResult::RuntimeError;
+                        }
+                    };
+                    self.push(value);
+                }
                 DefineGlobal => {
                     let name = self.read_constant().to_string();
                     let value = self.pop();

@@ -59,6 +59,16 @@ impl Parser {
         ))));
     }
 
+    fn variable(&mut self) {
+        let name = self.previous.clone();
+        self.named_variable(name);
+    }
+
+    fn named_variable(&mut self, name: Token) {
+        let arg = self.identifier_constant(name);
+        self.emit_bytes(OpCode::GetGlobal as u8, arg);
+    }
+
     fn unary(&mut self, scanner: &mut Scanner) {
         let operator_type = self.previous.token_type;
 
@@ -480,7 +490,7 @@ const RULES: &'static [ParseRule] = &[
     },
     //Identifier
     ParseRule {
-        prefix: None,
+        prefix: Some(|p, _s| p.variable()),
         infix: None,
         precedence: Precedence::None,
     },
