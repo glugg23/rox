@@ -93,6 +93,14 @@ impl VM {
                     let value = self.pop();
                     self.globals.insert(name, value);
                 }
+                SetGlobal => {
+                    let name = self.read_constant().to_string();
+                    if !self.globals.contains_key(&name) {
+                        self.runtime_error(format!("Undefined variable '{}'.", name).as_str());
+                        return InterpretResult::RuntimeError;
+                    }
+                    self.globals.insert(name, self.peek(0).clone());
+                }
                 Equal => {
                     let b = self.pop();
                     let a = self.pop();
