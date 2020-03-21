@@ -117,6 +117,23 @@ impl Parser {
         }
     }
 
+    fn parse_variable(&mut self, scanner: &mut Scanner, error_message: &str) -> u8 {
+        consume(self, scanner, Identifier, error_message).unwrap_or_else(|e| {
+            self.handle_error(e);
+        });
+
+        let name = self.previous.clone();
+        self.identifier_constant(name)
+    }
+
+    fn identifier_constant(&mut self, name: Token) -> u8 {
+        self.make_constant(Value::Object(ObjectType::String(Box::new(name.lexeme))))
+    }
+
+    fn define_variable(&mut self, global: u8) {
+        self.emit_bytes(OpCode::DefineGlobal as u8, global);
+    }
+
     fn emit_constant(&mut self, value: Value) {
         let constant = self.make_constant(value);
         self.emit_bytes(OpCode::Constant as u8, constant);
@@ -205,7 +222,11 @@ fn expression(parser: &mut Parser, scanner: &mut Scanner) {
 }
 
 fn declaration(parser: &mut Parser, scanner: &mut Scanner) {
-    statement(parser, scanner);
+    if match_token(parser, scanner, Var) {
+        var_statement(parser, scanner);
+    } else {
+        statement(parser, scanner);
+    }
 
     if parser.panic_mode {
         synchronise(parser, scanner);
@@ -218,6 +239,27 @@ fn statement(parser: &mut Parser, scanner: &mut Scanner) {
     } else {
         expression_statement(parser, scanner);
     }
+}
+
+fn var_statement(parser: &mut Parser, scanner: &mut Scanner) {
+    let global = parser.parse_variable(scanner, "Expect variable name.");
+
+    if match_token(parser, scanner, Equal) {
+        expression(parser, scanner);
+    } else {
+        parser.emit_byte(OpCode::Nil as u8);
+    }
+    consume(
+        parser,
+        scanner,
+        Semicolon,
+        "Expect ';' variable declaration.",
+    )
+    .unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+
+    parser.define_variable(global);
 }
 
 fn print_statement(parser: &mut Parser, scanner: &mut Scanner) {

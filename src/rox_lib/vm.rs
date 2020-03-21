@@ -4,6 +4,7 @@ use crate::compiler::compile;
 use crate::debug::disassemble_instruction;
 use crate::object::ObjectType;
 use crate::value::Value;
+use std::collections::HashMap;
 
 macro_rules! binary_op {
     ($vm:ident, $type:expr, $op:tt) => (
@@ -24,6 +25,7 @@ pub struct VM {
     chunk: Chunk,
     ip: usize, //Instruction Pointer
     stack: Vec<Value>,
+    globals: HashMap<String, Value>,
 }
 
 impl VM {
@@ -32,6 +34,7 @@ impl VM {
             chunk: Chunk::new(), //Create throwaway Chunk to avoid Option<Chunk>
             ip: 0,
             stack: Vec::new(),
+            globals: HashMap::new(),
         }
     }
 
@@ -73,6 +76,11 @@ impl VM {
                 False => self.push(Value::Boolean(false)),
                 Pop => {
                     self.pop();
+                }
+                DefineGlobal => {
+                    let name = self.read_constant().to_string();
+                    let value = self.pop();
+                    self.globals.insert(name, value);
                 }
                 Equal => {
                     let b = self.pop();
