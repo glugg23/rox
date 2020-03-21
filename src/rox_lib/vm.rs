@@ -173,7 +173,6 @@ impl VM {
     }
 
     fn pop(&mut self) -> Value {
-        //Unwrap for now
         self.stack.pop().unwrap()
     }
 

@@ -49,7 +49,7 @@ impl Parser {
     }
 
     fn number(&mut self) {
-        let value = f64::from_str(&self.previous.lexeme).unwrap(); //TODO: Don't use unwrap here
+        let value = f64::from_str(&self.previous.lexeme).unwrap();
         self.emit_constant(Value::Number(value));
     }
 
