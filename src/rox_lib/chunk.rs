@@ -133,24 +133,6 @@ mod tests {
     }
 
     #[test]
-    fn opcode_from_byte() {
-        assert_eq!(OpCode::from(0), OpCode::Constant);
-        assert_eq!(OpCode::from(1), OpCode::Nil);
-        assert_eq!(OpCode::from(2), OpCode::True);
-        assert_eq!(OpCode::from(3), OpCode::False);
-        assert_eq!(OpCode::from(4), OpCode::Equal);
-        assert_eq!(OpCode::from(5), OpCode::Greater);
-        assert_eq!(OpCode::from(6), OpCode::Less);
-        assert_eq!(OpCode::from(7), OpCode::Add);
-        assert_eq!(OpCode::from(8), OpCode::Subtract);
-        assert_eq!(OpCode::from(9), OpCode::Multiple);
-        assert_eq!(OpCode::from(10), OpCode::Divide);
-        assert_eq!(OpCode::from(11), OpCode::Not);
-        assert_eq!(OpCode::from(12), OpCode::Negate);
-        assert_eq!(OpCode::from(13), OpCode::Return);
-    }
-
-    #[test]
     #[should_panic(expected = "Unknown Opcode")]
     fn opcode_from_invalid_byte_should_panic() {
         OpCode::from(255);

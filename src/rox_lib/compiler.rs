@@ -675,7 +675,7 @@ mod tests {
 
     #[test]
     fn compiler_compile() {
-        let result = compile("1 + 1");
+        let result = compile("1 + 1;");
 
         assert!(result.is_some());
     }

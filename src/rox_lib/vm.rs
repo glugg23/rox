@@ -263,7 +263,7 @@ mod tests {
     fn vm_interpret_negate() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("-1");
+        let result = vm.interpret("-1;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -272,7 +272,7 @@ mod tests {
     fn vm_interpret_negate_not_number() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("-false");
+        let result = vm.interpret("-false;");
 
         assert_eq!(result, InterpretResult::RuntimeError);
     }
@@ -281,10 +281,10 @@ mod tests {
     fn vm_interpret_equal() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("true == nil");
+        let result = vm.interpret("true == nil;");
         assert_eq!(result, InterpretResult::Ok);
 
-        let result = vm.interpret("1.0 == 1.0");
+        let result = vm.interpret("1.0 == 1.0;");
         assert_eq!(result, InterpretResult::Ok);
     }
 
@@ -292,7 +292,7 @@ mod tests {
     fn vm_interpret_not() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("!true");
+        let result = vm.interpret("!true;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -301,7 +301,7 @@ mod tests {
     fn vm_interpret_not_equal() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("true != false");
+        let result = vm.interpret("true != false;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -310,7 +310,7 @@ mod tests {
     fn vm_interpret_greater() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("2 > 1");
+        let result = vm.interpret("2 > 1;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -319,7 +319,7 @@ mod tests {
     fn vm_interpret_greater_equal() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("1 >= 1");
+        let result = vm.interpret("1 >= 1;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -328,7 +328,7 @@ mod tests {
     fn vm_interpret_less() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("2 < 1");
+        let result = vm.interpret("2 < 1;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -337,7 +337,7 @@ mod tests {
     fn vm_interpret_less_equal() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("1 <= 1");
+        let result = vm.interpret("1 <= 1;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -346,10 +346,10 @@ mod tests {
     fn vm_interpret_binary_op_wrong_types() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("1 + true");
+        let result = vm.interpret("1 + true;");
         assert_eq!(result, InterpretResult::RuntimeError);
 
-        let result = vm.interpret("false / 0");
+        let result = vm.interpret("false / 0;");
         assert_eq!(result, InterpretResult::RuntimeError);
     }
 
@@ -357,7 +357,7 @@ mod tests {
     fn vm_interpret_add() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("1 + 2");
+        let result = vm.interpret("1 + 2;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -366,7 +366,7 @@ mod tests {
     fn vm_interpret_add_strings() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("\"hello\" + \" \" + \"world\"");
+        let result = vm.interpret("\"hello\" + \" \" + \"world\";");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -375,7 +375,7 @@ mod tests {
     fn vm_interpret_can_not_add_string_and_number() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("\"hello\" + 123");
+        let result = vm.interpret("\"hello\" + 123;");
 
         assert_eq!(result, InterpretResult::RuntimeError);
     }
@@ -384,7 +384,7 @@ mod tests {
     fn vm_interpret_subtract() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("1 - 0.5");
+        let result = vm.interpret("1 - 0.5;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -393,7 +393,7 @@ mod tests {
     fn vm_interpret_multiply() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("1 * 10");
+        let result = vm.interpret("1 * 10;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -402,7 +402,7 @@ mod tests {
     fn vm_interpret_divide() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("1 / 0");
+        let result = vm.interpret("1 / 0;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
