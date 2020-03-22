@@ -14,7 +14,7 @@ macro_rules! binary_op {
                 let a: f64 = $vm.pop().into();
                 $vm.push($type(a $op b));
             } else {
-                $vm.runtime_error("Operand must be a number.");
+                $vm.runtime_error("Operands must be numbers.");
                 return InterpretResult::RuntimeError;
             }
         };
@@ -126,7 +126,7 @@ impl VM {
 
                         self.push(Value::Number(a + b));
                     } else {
-                        self.runtime_error("Operands must be two number or two strings.");
+                        self.runtime_error("Operands must be two numbers or two strings.");
                         return InterpretResult::RuntimeError;
                     }
                 }
