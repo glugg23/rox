@@ -259,6 +259,87 @@ mod tests {
     }
 
     #[test]
+    fn vm_interpret_define_global() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("var a = 1;");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_define_global_no_value() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("var a;");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_define_global_no_semicolon() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("var a");
+
+        assert_eq!(result, InterpretResult::CompileError);
+    }
+
+    #[test]
+    fn vm_interpret_define_global_no_identifier() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("var = 1;");
+
+        assert_eq!(result, InterpretResult::CompileError);
+    }
+
+    #[test]
+    fn vm_interpret_get_global() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("var a = 1; a;");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_get_global_undefined() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("a;");
+
+        assert_eq!(result, InterpretResult::RuntimeError);
+    }
+
+    #[test]
+    fn vm_interpret_set_global() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("var a = 1; a = 2;");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_set_global_undefined() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("a = 1;");
+
+        assert_eq!(result, InterpretResult::RuntimeError);
+    }
+
+    #[test]
+    fn vm_interpret_set_global_invalid_target() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("true = 1;");
+
+        assert_eq!(result, InterpretResult::CompileError);
+    }
+
+    #[test]
     fn vm_interpret_negate() {
         let mut vm = VM::new();
 
@@ -404,5 +485,23 @@ mod tests {
         let result = vm.interpret("1 / 0;");
 
         assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_print() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("print \"hello world\";");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_print_with_no_semicolon() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("print \"hello world\"");
+
+        assert_eq!(result, InterpretResult::CompileError);
     }
 }
