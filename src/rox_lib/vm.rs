@@ -4,6 +4,7 @@ use crate::compiler::compile;
 use crate::debug::disassemble_instruction;
 use crate::object::ObjectType;
 use crate::value::Value;
+use std::collections::HashMap;
 
 macro_rules! binary_op {
     ($vm:ident, $type:expr, $op:tt) => (
@@ -13,7 +14,7 @@ macro_rules! binary_op {
                 let a: f64 = $vm.pop().into();
                 $vm.push($type(a $op b));
             } else {
-                $vm.runtime_error("Operand must be a number.");
+                $vm.runtime_error("Operands must be numbers.");
                 return InterpretResult::RuntimeError;
             }
         };
@@ -24,6 +25,7 @@ pub struct VM {
     chunk: Chunk,
     ip: usize, //Instruction Pointer
     stack: Vec<Value>,
+    globals: HashMap<String, Value>,
 }
 
 impl VM {
@@ -32,6 +34,7 @@ impl VM {
             chunk: Chunk::new(), //Create throwaway Chunk to avoid Option<Chunk>
             ip: 0,
             stack: Vec::new(),
+            globals: HashMap::new(),
         }
     }
 
@@ -71,6 +74,33 @@ impl VM {
                 Nil => self.push(Value::Nil),
                 True => self.push(Value::Boolean(true)),
                 False => self.push(Value::Boolean(false)),
+                Pop => {
+                    self.pop();
+                }
+                GetGlobal => {
+                    let name = self.read_constant().to_string();
+                    let value = match self.globals.get(&name) {
+                        Some(v) => v.clone(),
+                        None => {
+                            self.runtime_error(format!("Undefined variable '{}'.", name).as_str());
+                            return InterpretResult::RuntimeError;
+                        }
+                    };
+                    self.push(value);
+                }
+                DefineGlobal => {
+                    let name = self.read_constant().to_string();
+                    let value = self.pop();
+                    self.globals.insert(name, value);
+                }
+                SetGlobal => {
+                    let name = self.read_constant().to_string();
+                    if !self.globals.contains_key(&name) {
+                        self.runtime_error(format!("Undefined variable '{}'.", name).as_str());
+                        return InterpretResult::RuntimeError;
+                    }
+                    self.globals.insert(name, self.peek(0).clone());
+                }
                 Equal => {
                     let b = self.pop();
                     let a = self.pop();
@@ -96,7 +126,7 @@ impl VM {
 
                         self.push(Value::Number(a + b));
                     } else {
-                        self.runtime_error("Operands must be two number or two strings.");
+                        self.runtime_error("Operands must be two numbers or two strings.");
                         return InterpretResult::RuntimeError;
                     }
                 }
@@ -117,9 +147,10 @@ impl VM {
                         return InterpretResult::RuntimeError;
                     }
                 },
+                Print => {
+                    println!("{}", self.pop());
+                }
                 Return => {
-                    print!("{}", self.pop());
-                    println!();
                     return InterpretResult::Ok;
                 }
             };
@@ -142,7 +173,6 @@ impl VM {
     }
 
     fn pop(&mut self) -> Value {
-        //Unwrap for now
         self.stack.pop().unwrap()
     }
 
@@ -229,10 +259,91 @@ mod tests {
     }
 
     #[test]
+    fn vm_interpret_define_global() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("var a = 1;");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_define_global_no_value() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("var a;");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_define_global_no_semicolon() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("var a");
+
+        assert_eq!(result, InterpretResult::CompileError);
+    }
+
+    #[test]
+    fn vm_interpret_define_global_no_identifier() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("var = 1;");
+
+        assert_eq!(result, InterpretResult::CompileError);
+    }
+
+    #[test]
+    fn vm_interpret_get_global() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("var a = 1; a;");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_get_global_undefined() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("a;");
+
+        assert_eq!(result, InterpretResult::RuntimeError);
+    }
+
+    #[test]
+    fn vm_interpret_set_global() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("var a = 1; a = 2;");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_set_global_undefined() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("a = 1;");
+
+        assert_eq!(result, InterpretResult::RuntimeError);
+    }
+
+    #[test]
+    fn vm_interpret_set_global_invalid_target() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("true = 1;");
+
+        assert_eq!(result, InterpretResult::CompileError);
+    }
+
+    #[test]
     fn vm_interpret_negate() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("-1");
+        let result = vm.interpret("-1;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -241,7 +352,7 @@ mod tests {
     fn vm_interpret_negate_not_number() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("-false");
+        let result = vm.interpret("-false;");
 
         assert_eq!(result, InterpretResult::RuntimeError);
     }
@@ -250,10 +361,10 @@ mod tests {
     fn vm_interpret_equal() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("true == nil");
+        let result = vm.interpret("true == nil;");
         assert_eq!(result, InterpretResult::Ok);
 
-        let result = vm.interpret("1.0 == 1.0");
+        let result = vm.interpret("1.0 == 1.0;");
         assert_eq!(result, InterpretResult::Ok);
     }
 
@@ -261,7 +372,7 @@ mod tests {
     fn vm_interpret_not() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("!true");
+        let result = vm.interpret("!true;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -270,7 +381,7 @@ mod tests {
     fn vm_interpret_not_equal() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("true != false");
+        let result = vm.interpret("true != false;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -279,7 +390,7 @@ mod tests {
     fn vm_interpret_greater() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("2 > 1");
+        let result = vm.interpret("2 > 1;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -288,7 +399,7 @@ mod tests {
     fn vm_interpret_greater_equal() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("1 >= 1");
+        let result = vm.interpret("1 >= 1;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -297,7 +408,7 @@ mod tests {
     fn vm_interpret_less() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("2 < 1");
+        let result = vm.interpret("2 < 1;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -306,7 +417,7 @@ mod tests {
     fn vm_interpret_less_equal() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("1 <= 1");
+        let result = vm.interpret("1 <= 1;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -315,10 +426,10 @@ mod tests {
     fn vm_interpret_binary_op_wrong_types() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("1 + true");
+        let result = vm.interpret("1 + true;");
         assert_eq!(result, InterpretResult::RuntimeError);
 
-        let result = vm.interpret("false / 0");
+        let result = vm.interpret("false / 0;");
         assert_eq!(result, InterpretResult::RuntimeError);
     }
 
@@ -326,7 +437,7 @@ mod tests {
     fn vm_interpret_add() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("1 + 2");
+        let result = vm.interpret("1 + 2;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -335,7 +446,7 @@ mod tests {
     fn vm_interpret_add_strings() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("\"hello\" + \" \" + \"world\"");
+        let result = vm.interpret("\"hello\" + \" \" + \"world\";");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -344,7 +455,7 @@ mod tests {
     fn vm_interpret_can_not_add_string_and_number() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("\"hello\" + 123");
+        let result = vm.interpret("\"hello\" + 123;");
 
         assert_eq!(result, InterpretResult::RuntimeError);
     }
@@ -353,7 +464,7 @@ mod tests {
     fn vm_interpret_subtract() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("1 - 0.5");
+        let result = vm.interpret("1 - 0.5;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -362,7 +473,7 @@ mod tests {
     fn vm_interpret_multiply() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("1 * 10");
+        let result = vm.interpret("1 * 10;");
 
         assert_eq!(result, InterpretResult::Ok);
     }
@@ -371,8 +482,26 @@ mod tests {
     fn vm_interpret_divide() {
         let mut vm = VM::new();
 
-        let result = vm.interpret("1 / 0");
+        let result = vm.interpret("1 / 0;");
 
         assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_print() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("print \"hello world\";");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_print_with_no_semicolon() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("print \"hello world\"");
+
+        assert_eq!(result, InterpretResult::CompileError);
     }
 }

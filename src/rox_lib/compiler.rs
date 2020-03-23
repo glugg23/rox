@@ -35,6 +35,10 @@ impl Parser {
         self.emit_byte(byte2);
     }
 
+    pub fn check(&self, token_type: TokenType) -> bool {
+        self.current.token_type == token_type
+    }
+
     fn literal(&mut self) {
         match self.previous.token_type {
             False => self.emit_byte(OpCode::False as u8),
@@ -45,7 +49,7 @@ impl Parser {
     }
 
     fn number(&mut self) {
-        let value = f64::from_str(&self.previous.lexeme).unwrap(); //TODO: Don't use unwrap here
+        let value = f64::from_str(&self.previous.lexeme).unwrap();
         self.emit_constant(Value::Number(value));
     }
 
@@ -53,6 +57,22 @@ impl Parser {
         self.emit_constant(Value::Object(ObjectType::String(Box::from(
             self.previous.lexeme.as_str()[1..self.previous.lexeme.len() - 1].to_owned(),
         ))));
+    }
+
+    fn variable(&mut self, scanner: &mut Scanner, can_assign: bool) {
+        let name = self.previous.clone();
+        self.named_variable(scanner, name, can_assign);
+    }
+
+    fn named_variable(&mut self, scanner: &mut Scanner, name: Token, can_assign: bool) {
+        let arg = self.identifier_constant(name);
+
+        if can_assign && match_token(self, scanner, Equal) {
+            expression(self, scanner);
+            self.emit_bytes(OpCode::SetGlobal as u8, arg);
+        } else {
+            self.emit_bytes(OpCode::GetGlobal as u8, arg);
+        }
     }
 
     fn unary(&mut self, scanner: &mut Scanner) {
@@ -104,13 +124,39 @@ impl Parser {
             }
         };
 
-        prefix_rule(self, scanner);
+        let can_assign = precedence <= Precedence::Assignment;
+        prefix_rule(self, scanner, can_assign);
 
         while precedence <= get_rule(self.current.token_type).precedence {
             advance(self, scanner);
             let infix_rule = &get_rule(self.previous.token_type).infix.unwrap();
-            infix_rule(self, scanner);
+            infix_rule(self, scanner, can_assign);
         }
+
+        if can_assign && match_token(self, scanner, Equal) {
+            self.handle_error(RoxError::new(
+                "Invalid assignment target.",
+                self.previous.lexeme.clone(),
+                self.previous.line,
+            ));
+        }
+    }
+
+    fn parse_variable(&mut self, scanner: &mut Scanner, error_message: &str) -> u8 {
+        consume(self, scanner, Identifier, error_message).unwrap_or_else(|e| {
+            self.handle_error(e);
+        });
+
+        let name = self.previous.clone();
+        self.identifier_constant(name)
+    }
+
+    fn identifier_constant(&mut self, name: Token) -> u8 {
+        self.make_constant(Value::Object(ObjectType::String(Box::new(name.lexeme))))
+    }
+
+    fn define_variable(&mut self, global: u8) {
+        self.emit_bytes(OpCode::DefineGlobal as u8, global);
     }
 
     fn emit_constant(&mut self, value: Value) {
@@ -164,10 +210,10 @@ pub fn compile(source: &str) -> Option<Chunk> {
     let mut parser = Parser::new();
 
     advance(&mut parser, &mut scanner);
-    expression(&mut parser, &mut scanner);
-    consume(&mut parser, &mut scanner, EOF, "Expect end of expression.").unwrap_or_else(|e| {
-        parser.handle_error(e);
-    });
+
+    while !match_token(&mut parser, &mut scanner, EOF) {
+        declaration(&mut parser, &mut scanner);
+    }
 
     parser.end_compiler();
 
@@ -200,6 +246,63 @@ fn expression(parser: &mut Parser, scanner: &mut Scanner) {
     parser.parse_precedence(scanner, Precedence::Assignment);
 }
 
+fn declaration(parser: &mut Parser, scanner: &mut Scanner) {
+    if match_token(parser, scanner, Var) {
+        var_statement(parser, scanner);
+    } else {
+        statement(parser, scanner);
+    }
+
+    if parser.panic_mode {
+        synchronise(parser, scanner);
+    }
+}
+
+fn statement(parser: &mut Parser, scanner: &mut Scanner) {
+    if match_token(parser, scanner, Print) {
+        print_statement(parser, scanner);
+    } else {
+        expression_statement(parser, scanner);
+    }
+}
+
+fn var_statement(parser: &mut Parser, scanner: &mut Scanner) {
+    let global = parser.parse_variable(scanner, "Expect variable name.");
+
+    if match_token(parser, scanner, Equal) {
+        expression(parser, scanner);
+    } else {
+        parser.emit_byte(OpCode::Nil as u8);
+    }
+    consume(
+        parser,
+        scanner,
+        Semicolon,
+        "Expect ';' variable declaration.",
+    )
+    .unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+
+    parser.define_variable(global);
+}
+
+fn print_statement(parser: &mut Parser, scanner: &mut Scanner) {
+    expression(parser, scanner);
+    consume(parser, scanner, Semicolon, "Expect ';' after value.").unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+    parser.emit_byte(OpCode::Print as u8);
+}
+
+fn expression_statement(parser: &mut Parser, scanner: &mut Scanner) {
+    expression(parser, scanner);
+    consume(parser, scanner, Semicolon, "Expect ';' after expression.").unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+    parser.emit_byte(OpCode::Pop as u8);
+}
+
 fn consume(
     parser: &mut Parser,
     scanner: &mut Scanner,
@@ -211,6 +314,32 @@ fn consume(
         Ok(())
     } else {
         Err(RoxError::new(message, scanner.get_token(), scanner.line))
+    }
+}
+
+fn match_token(parser: &mut Parser, scanner: &mut Scanner, token_type: TokenType) -> bool {
+    return if !parser.check(token_type) {
+        false
+    } else {
+        advance(parser, scanner);
+        true
+    };
+}
+
+fn synchronise(parser: &mut Parser, scanner: &mut Scanner) {
+    parser.panic_mode = false;
+
+    while parser.current.token_type != EOF {
+        if parser.previous.token_type == Semicolon {
+            return;
+        }
+
+        match parser.current.token_type {
+            Class | Fun | Var | For | If | While | Print | Return => return,
+            _ => (),
+        }
+
+        advance(parser, scanner);
     }
 }
 
@@ -247,7 +376,7 @@ impl Precedence {
     }
 }
 
-type ParseFn = Option<fn(&mut Parser, &mut Scanner)>;
+type ParseFn = Option<fn(&mut Parser, &mut Scanner, bool)>;
 
 struct ParseRule {
     prefix: ParseFn,
@@ -262,7 +391,7 @@ fn get_rule(token_type: TokenType) -> &'static ParseRule {
 const RULES: &'static [ParseRule] = &[
     //LeftParen
     ParseRule {
-        prefix: Some(|p, s| p.grouping(s)),
+        prefix: Some(|p, s, _ca| p.grouping(s)),
         infix: None,
         precedence: Precedence::None,
     },
@@ -298,14 +427,14 @@ const RULES: &'static [ParseRule] = &[
     },
     //Minus
     ParseRule {
-        prefix: Some(|p, s| p.unary(s)),
-        infix: Some(|p, s| p.binary(s)),
+        prefix: Some(|p, s, _ca| p.unary(s)),
+        infix: Some(|p, s, _ca| p.binary(s)),
         precedence: Precedence::Term,
     },
     //Plus
     ParseRule {
         prefix: None,
-        infix: Some(|p, s| p.binary(s)),
+        infix: Some(|p, s, _ca| p.binary(s)),
         precedence: Precedence::Term,
     },
     //SemiColon
@@ -317,25 +446,25 @@ const RULES: &'static [ParseRule] = &[
     //Slash
     ParseRule {
         prefix: None,
-        infix: Some(|p, s| p.binary(s)),
+        infix: Some(|p, s, _ca| p.binary(s)),
         precedence: Precedence::Factor,
     },
     //Star
     ParseRule {
         prefix: None,
-        infix: Some(|p, s| p.binary(s)),
+        infix: Some(|p, s, _ca| p.binary(s)),
         precedence: Precedence::Factor,
     },
     //Bang
     ParseRule {
-        prefix: Some(|p, s| p.unary(s)),
+        prefix: Some(|p, s, _ca| p.unary(s)),
         infix: None,
         precedence: Precedence::None,
     },
     //BangEqual
     ParseRule {
         prefix: None,
-        infix: Some(|p, s| p.binary(s)),
+        infix: Some(|p, s, _ca| p.binary(s)),
         precedence: Precedence::Equality,
     },
     //Equal
@@ -347,48 +476,48 @@ const RULES: &'static [ParseRule] = &[
     //EqualEqual
     ParseRule {
         prefix: None,
-        infix: Some(|p, s| p.binary(s)),
+        infix: Some(|p, s, _ca| p.binary(s)),
         precedence: Precedence::Equality,
     },
     //Greater
     ParseRule {
         prefix: None,
-        infix: Some(|p, s| p.binary(s)),
+        infix: Some(|p, s, _ca| p.binary(s)),
         precedence: Precedence::Comparison,
     },
     //GreaterEqual
     ParseRule {
         prefix: None,
-        infix: Some(|p, s| p.binary(s)),
+        infix: Some(|p, s, _ca| p.binary(s)),
         precedence: Precedence::Comparison,
     },
     //Less
     ParseRule {
         prefix: None,
-        infix: Some(|p, s| p.binary(s)),
+        infix: Some(|p, s, _ca| p.binary(s)),
         precedence: Precedence::Comparison,
     },
     //LessEqual
     ParseRule {
         prefix: None,
-        infix: Some(|p, s| p.binary(s)),
+        infix: Some(|p, s, _ca| p.binary(s)),
         precedence: Precedence::Comparison,
     },
     //Identifier
     ParseRule {
-        prefix: None,
+        prefix: Some(|p, s, ca| p.variable(s, ca)),
         infix: None,
         precedence: Precedence::None,
     },
     //String
     ParseRule {
-        prefix: Some(|p, _s| p.string()),
+        prefix: Some(|p, _s, _ca| p.string()),
         infix: None,
         precedence: Precedence::None,
     },
     //Number
     ParseRule {
-        prefix: Some(|p, _s| p.number()),
+        prefix: Some(|p, _s, _ca| p.number()),
         infix: None,
         precedence: Precedence::None,
     },
@@ -412,7 +541,7 @@ const RULES: &'static [ParseRule] = &[
     },
     //False
     ParseRule {
-        prefix: Some(|p, _s| p.literal()),
+        prefix: Some(|p, _s, _ca| p.literal()),
         infix: None,
         precedence: Precedence::None,
     },
@@ -436,7 +565,7 @@ const RULES: &'static [ParseRule] = &[
     },
     //Nil
     ParseRule {
-        prefix: Some(|p, _s| p.literal()),
+        prefix: Some(|p, _s, _ca| p.literal()),
         infix: None,
         precedence: Precedence::None,
     },
@@ -472,7 +601,7 @@ const RULES: &'static [ParseRule] = &[
     },
     //True
     ParseRule {
-        prefix: Some(|p, _s| p.literal()),
+        prefix: Some(|p, _s, _ca| p.literal()),
         infix: None,
         precedence: Precedence::None,
     },
@@ -546,7 +675,7 @@ mod tests {
 
     #[test]
     fn compiler_compile() {
-        let result = compile("1 + 1");
+        let result = compile("1 + 1;");
 
         assert!(result.is_some());
     }

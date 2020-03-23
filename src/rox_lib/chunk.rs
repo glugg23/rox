@@ -34,6 +34,10 @@ pub enum OpCode {
     Nil,
     True,
     False,
+    Pop,
+    GetGlobal,
+    DefineGlobal,
+    SetGlobal,
     Equal,
     Greater,
     Less,
@@ -43,6 +47,7 @@ pub enum OpCode {
     Divide,
     Not,
     Negate,
+    Print,
     Return,
 }
 
@@ -53,16 +58,21 @@ impl From<u8> for OpCode {
             1 => OpCode::Nil,
             2 => OpCode::True,
             3 => OpCode::False,
-            4 => OpCode::Equal,
-            5 => OpCode::Greater,
-            6 => OpCode::Less,
-            7 => OpCode::Add,
-            8 => OpCode::Subtract,
-            9 => OpCode::Multiple,
-            10 => OpCode::Divide,
-            11 => OpCode::Not,
-            12 => OpCode::Negate,
-            13 => OpCode::Return,
+            4 => OpCode::Pop,
+            5 => OpCode::GetGlobal,
+            6 => OpCode::DefineGlobal,
+            7 => OpCode::SetGlobal,
+            8 => OpCode::Equal,
+            9 => OpCode::Greater,
+            10 => OpCode::Less,
+            11 => OpCode::Add,
+            12 => OpCode::Subtract,
+            13 => OpCode::Multiple,
+            14 => OpCode::Divide,
+            15 => OpCode::Not,
+            16 => OpCode::Negate,
+            17 => OpCode::Print,
+            18 => OpCode::Return,
             _ => panic!("Unknown Opcode"),
         }
     }
@@ -78,6 +88,10 @@ impl Display for OpCode {
                 OpCode::Nil => "NIL",
                 OpCode::True => "TRUE",
                 OpCode::False => "FALSE",
+                OpCode::Pop => "POP",
+                OpCode::GetGlobal => "GET GLOBAL",
+                OpCode::DefineGlobal => "DEFINE GLOBAL",
+                OpCode::SetGlobal => "SET GLOBAL",
                 OpCode::Equal => "EQUAL",
                 OpCode::Greater => "GREATER",
                 OpCode::Less => "LESS",
@@ -87,6 +101,7 @@ impl Display for OpCode {
                 OpCode::Divide => "DIVIDE",
                 OpCode::Not => "NOT",
                 OpCode::Negate => "NEGATE",
+                OpCode::Print => "PRINT",
                 OpCode::Return => "RETURN",
             }
         )
@@ -115,24 +130,6 @@ mod tests {
 
         assert_eq!(index, 0);
         assert_eq!(chunk.constants[0], Value::Number(1.5));
-    }
-
-    #[test]
-    fn opcode_from_byte() {
-        assert_eq!(OpCode::from(0), OpCode::Constant);
-        assert_eq!(OpCode::from(1), OpCode::Nil);
-        assert_eq!(OpCode::from(2), OpCode::True);
-        assert_eq!(OpCode::from(3), OpCode::False);
-        assert_eq!(OpCode::from(4), OpCode::Equal);
-        assert_eq!(OpCode::from(5), OpCode::Greater);
-        assert_eq!(OpCode::from(6), OpCode::Less);
-        assert_eq!(OpCode::from(7), OpCode::Add);
-        assert_eq!(OpCode::from(8), OpCode::Subtract);
-        assert_eq!(OpCode::from(9), OpCode::Multiple);
-        assert_eq!(OpCode::from(10), OpCode::Divide);
-        assert_eq!(OpCode::from(11), OpCode::Not);
-        assert_eq!(OpCode::from(12), OpCode::Negate);
-        assert_eq!(OpCode::from(13), OpCode::Return);
     }
 
     #[test]
