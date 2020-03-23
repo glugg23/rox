@@ -228,6 +228,14 @@ impl Compiler {
             scope_depth: 0,
         }
     }
+
+    pub fn begin_scope(&mut self) {
+        self.scope_depth += 1;
+    }
+
+    pub fn end_scope(&mut self) {
+        self.scope_depth -= 1;
+    }
 }
 
 struct Local {
@@ -277,6 +285,16 @@ fn expression(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compile
     parser.parse_precedence(scanner, compiler, Precedence::Assignment);
 }
 
+fn block(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
+    while !parser.check(RightBrace) && !parser.check(EOF) {
+        declaration(parser, scanner, compiler);
+    }
+
+    consume(parser, scanner, RightBrace, "Expect '}' after block.").unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+}
+
 fn declaration(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
     if match_token(parser, scanner, Var) {
         var_statement(parser, scanner, compiler);
@@ -292,6 +310,10 @@ fn declaration(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compil
 fn statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
     if match_token(parser, scanner, Print) {
         print_statement(parser, scanner, compiler);
+    } else if match_token(parser, scanner, LeftBrace) {
+        compiler.begin_scope();
+        block(parser, scanner, compiler);
+        compiler.end_scope();
     } else {
         expression_statement(parser, scanner, compiler);
     }
