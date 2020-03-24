@@ -19,6 +19,12 @@ macro_rules! is_alpha {
     };
 }
 
+/*
+TODO: Investigate using Peekable<Chars>, instead of Vec<char> for Scanner.source
+Could use take_while(self, P) to implement advance(self)
+Then return Cow::borrowed(str) instead of String since we never mutate the source code
+*/
+
 pub struct Scanner {
     source: Vec<char>,
     start: usize,
