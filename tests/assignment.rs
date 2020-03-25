@@ -99,6 +99,26 @@ fn prefix_operator() {
 }
 
 #[test]
+fn local() {
+    let result = Command::new("cargo")
+        .args(&[
+            "run",
+            "-q",
+            "--release",
+            "--",
+            "tests/resources/assignment/local.lox",
+        ])
+        .output()
+        .expect("Error while running assignment/local()");
+
+    assert_eq!(
+        str::from_utf8(&result.stdout).unwrap(),
+        "before\nafter\narg\narg\n"
+    );
+    assert!(result.status.success());
+}
+
+#[test]
 fn syntax() {
     let result = Command::new("cargo")
         .args(&[

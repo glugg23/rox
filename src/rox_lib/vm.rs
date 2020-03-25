@@ -77,6 +77,15 @@ impl VM {
                 Pop => {
                     self.pop();
                 }
+                GetLocal => {
+                    let slot = self.read_byte() as usize;
+                    let value = self.stack[slot].clone();
+                    self.push(value);
+                }
+                SetLocal => {
+                    let slot = self.read_byte() as usize;
+                    self.stack[slot] = self.peek(0).clone();
+                }
                 GetGlobal => {
                     let name = self.read_constant().to_string();
                     let value = match self.globals.get(&name) {
@@ -254,6 +263,51 @@ mod tests {
         let mut vm = VM::new();
 
         let result = vm.interpret("+1");
+
+        assert_eq!(result, InterpretResult::CompileError);
+    }
+
+    #[test]
+    fn vm_interpret_get_local() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("{var a = 1; a;}");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_set_local() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("{var a = 1; a = 2;}");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_mismatching_block() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("{");
+
+        assert_eq!(result, InterpretResult::CompileError);
+    }
+
+    #[test]
+    fn vm_interpret_same_name_same_scope() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("{var a; var a;}");
+
+        assert_eq!(result, InterpretResult::CompileError);
+    }
+
+    #[test]
+    fn vm_interpret_cannot_read_local_variable_in_own_initializer() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("{var a = a;}");
 
         assert_eq!(result, InterpretResult::CompileError);
     }
