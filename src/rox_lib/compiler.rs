@@ -5,6 +5,7 @@ use crate::scanner::TokenType::*;
 use crate::scanner::{Scanner, Token, TokenType};
 use crate::value::Value;
 use crate::RoxError;
+use std::ops::{AddAssign, SubAssign};
 use std::str::FromStr;
 
 pub struct Parser {
@@ -179,7 +180,7 @@ impl Parser {
             self.handle_error(e);
         });
 
-        if compiler.scope_depth > 0 {
+        if compiler.scope_depth > Depth::Global {
             None
         } else {
             let name = self.previous.clone();
@@ -246,14 +247,14 @@ impl Parser {
 
 pub struct Compiler {
     locals: Vec<Local>,
-    scope_depth: i32,
+    scope_depth: Depth,
 }
 
 impl Compiler {
     pub fn new() -> Self {
         Compiler {
             locals: Vec::new(),
-            scope_depth: 0,
+            scope_depth: Depth::Global,
         }
     }
 
@@ -273,14 +274,14 @@ impl Compiler {
 
     pub fn declare_variable(&mut self, parser: &mut Parser) -> Result<(), RoxError> {
         //Global variables are implicitly declared.
-        if self.scope_depth == 0 {
+        if self.scope_depth == Depth::Global {
             return Ok(());
         }
 
         let name = parser.previous.clone();
 
         for l in self.locals.iter().rev() {
-            if l.depth != -1 && l.depth < self.scope_depth {
+            if l.depth != Depth::Uninitialised && l.depth < self.scope_depth {
                 break;
             }
 
@@ -327,7 +328,33 @@ impl Compiler {
 
 struct Local {
     name: Token,
-    depth: i32,
+    depth: Depth,
+}
+
+#[derive(Copy, Clone, PartialOrd, PartialEq)]
+enum Depth {
+    Uninitialised,
+    Global,
+    Some(usize),
+}
+
+impl AddAssign<usize> for Depth {
+    fn add_assign(&mut self, rhs: usize) {
+        *self = match *self {
+            Depth::Some(d) => Depth::Some(d + rhs),
+            Depth::Global | Depth::Uninitialised => Depth::Some(rhs),
+        }
+    }
+}
+
+impl SubAssign<usize> for Depth {
+    fn sub_assign(&mut self, rhs: usize) {
+        *self = match *self {
+            Depth::Some(d) if rhs >= d => Depth::Global,
+            Depth::Some(d) => Depth::Some(d - rhs),
+            Depth::Global | Depth::Uninitialised => Depth::Uninitialised,
+        }
+    }
 }
 
 pub fn compile(source: &str) -> Option<Chunk> {
