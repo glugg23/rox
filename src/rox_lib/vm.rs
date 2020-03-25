@@ -77,6 +77,15 @@ impl VM {
                 Pop => {
                     self.pop();
                 }
+                GetLocal => {
+                    let slot = self.read_byte() as usize;
+                    let value = self.stack[slot].clone();
+                    self.push(value);
+                }
+                SetLocal => {
+                    let slot = self.read_byte() as usize;
+                    self.stack[slot] = self.peek(0).clone();
+                }
                 GetGlobal => {
                     let name = self.read_constant().to_string();
                     let value = match self.globals.get(&name) {

@@ -71,13 +71,25 @@ impl Parser {
         name: Token,
         can_assign: bool,
     ) {
-        let arg = self.identifier_constant(name);
+        let get_op;
+        let set_op;
+
+        let mut arg = compiler.resolve_local(&name);
+
+        if arg != None {
+            get_op = OpCode::GetLocal;
+            set_op = OpCode::SetLocal;
+        } else {
+            arg = Some(self.identifier_constant(name));
+            get_op = OpCode::GetGlobal;
+            set_op = OpCode::SetGlobal;
+        }
 
         if can_assign && match_token(self, scanner, Equal) {
             expression(self, scanner, compiler);
-            self.emit_bytes(OpCode::SetGlobal as u8, arg);
+            self.emit_bytes(set_op as u8, arg.unwrap());
         } else {
-            self.emit_bytes(OpCode::GetGlobal as u8, arg);
+            self.emit_bytes(get_op as u8, arg.unwrap());
         }
     }
 
@@ -300,6 +312,16 @@ impl Compiler {
             self.locals.push(local);
             Ok(())
         };
+    }
+
+    pub fn resolve_local(&self, name: &Token) -> Option<u8> {
+        for (i, l) in self.locals.iter().enumerate().rev() {
+            if l.name.lexeme == name.lexeme {
+                return Some(i as u8);
+            }
+        }
+
+        None
     }
 }
 
