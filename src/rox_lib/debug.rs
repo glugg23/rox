@@ -1,6 +1,5 @@
 use crate::chunk::OpCode::*;
 use crate::chunk::{Chunk, OpCode};
-use crate::Value;
 
 pub fn disassemble_chuck(chunk: &Chunk, name: &str) {
     println!("== {} ==", name);
@@ -22,10 +21,12 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
 
     let instruction = OpCode::from(chunk.code[offset]);
     match instruction {
-        Constant => constant_instruction(instruction, chunk, offset),
-        Add | Subtract | Multiple | Divide | Negate | Return => {
-            simple_instruction(instruction, offset)
+        Constant | GetGlobal | DefineGlobal | SetGlobal => {
+            constant_instruction(instruction, chunk, offset)
         }
+        GetLocal | SetLocal => byte_instruction(instruction, chunk, offset),
+        Nil | True | False | Pop | Equal | Greater | Less | Add | Subtract | Multiple | Divide
+        | Not | Negate | Print | Return => simple_instruction(instruction, offset),
     }
 }
 
@@ -37,12 +38,12 @@ fn simple_instruction(instruction: OpCode, offset: usize) -> usize {
 fn constant_instruction(instruction: OpCode, chunk: &Chunk, offset: usize) -> usize {
     let constant = chunk.code[offset + 1] as usize;
     print!("{:<16} {:>4} ", instruction.to_string(), constant);
-    print_value(chunk.constants[constant]);
-    println!();
+    println!("{}", chunk.constants[constant]);
     offset + 2
 }
 
-pub fn print_value(value: Value) {
-    //Might be possible to remove this function call, depending on how value is implemented further
-    print!("{}", value);
+fn byte_instruction(instruction: OpCode, chunk: &Chunk, offset: usize) -> usize {
+    let slot = chunk.code[offset + 1] as usize;
+    println!("{:<16} {:>4} ", instruction.to_string(), slot);
+    offset + 2
 }

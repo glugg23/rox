@@ -5,10 +5,10 @@ use std::fmt::{Display, Formatter};
 pub mod chunk;
 pub mod compiler;
 pub mod debug;
+pub mod object;
 pub mod scanner;
+pub mod value;
 pub mod vm;
-
-type Value = f64;
 
 #[derive(Debug)]
 pub struct RoxError {

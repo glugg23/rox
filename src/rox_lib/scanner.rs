@@ -19,6 +19,12 @@ macro_rules! is_alpha {
     };
 }
 
+/*
+TODO: Investigate using Peekable<Chars>, instead of Vec<char> for Scanner.source
+Could use take_while(self, P) to implement advance(self)
+Then return Cow::borrowed(str) instead of String since we never mutate the source code
+*/
+
 pub struct Scanner {
     source: Vec<char>,
     start: usize,
@@ -91,7 +97,7 @@ impl Scanner {
         self.source[self.current - 1]
     }
 
-    fn match_token(&mut self, expected: char) -> bool {
+    pub fn match_token(&mut self, expected: char) -> bool {
         if self.is_at_end() {
             return false;
         }
@@ -126,27 +132,16 @@ impl Scanner {
     }
 
     fn number(&mut self) -> Token {
-        while match self.peek() {
-            Some(c) => c.is_ascii_digit(),
-            None => false,
-        } {
+        while matches!(self.peek(), Some(c) if c.is_ascii_digit()) {
             self.advance();
         }
 
         //Look for fractional number
-        if self.peek() == Some('.')
-            && match self.peek_next() {
-                Some(c) => c.is_ascii_digit(),
-                None => false,
-            }
-        {
+        if self.peek() == Some('.') && matches!(self.peek_next(), Some(c) if c.is_ascii_digit()) {
             //Consume dot
             self.advance();
 
-            while match self.peek() {
-                Some(c) => c.is_ascii_digit(),
-                None => false,
-            } {
+            while matches!(self.peek(), Some(c) if c.is_ascii_digit()) {
                 self.advance();
             }
         }
@@ -155,10 +150,7 @@ impl Scanner {
     }
 
     fn identifier(&mut self) -> Token {
-        while match self.peek() {
-            Some(c) => is_alpha!(c) || c.is_ascii_digit(),
-            None => false,
-        } {
+        while matches!(self.peek(), Some(c) if is_alpha!(c) || c.is_ascii_digit()) {
             self.advance();
         }
 
