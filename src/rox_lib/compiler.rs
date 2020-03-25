@@ -153,21 +153,37 @@ impl Parser {
         }
     }
 
-    fn parse_variable(&mut self, scanner: &mut Scanner, error_message: &str) -> u8 {
+    fn parse_variable(
+        &mut self,
+        scanner: &mut Scanner,
+        compiler: &mut Compiler,
+        error_message: &str,
+    ) -> Option<u8> {
         consume(self, scanner, Identifier, error_message).unwrap_or_else(|e| {
             self.handle_error(e);
         });
 
-        let name = self.previous.clone();
-        self.identifier_constant(name)
+        compiler.declare_variable(self).unwrap_or_else(|e| {
+            self.handle_error(e);
+        });
+
+        if compiler.scope_depth > 0 {
+            None
+        } else {
+            let name = self.previous.clone();
+            Some(self.identifier_constant(name))
+        }
     }
 
     fn identifier_constant(&mut self, name: Token) -> u8 {
         self.make_constant(Value::Object(ObjectType::String(Box::new(name.lexeme))))
     }
 
-    fn define_variable(&mut self, global: u8) {
-        self.emit_bytes(OpCode::DefineGlobal as u8, global);
+    fn define_variable(&mut self, global: Option<u8>) {
+        match global {
+            Some(g) => self.emit_bytes(OpCode::DefineGlobal as u8, g),
+            None => (), //No code needed at runtime for local variables
+        }
     }
 
     fn emit_constant(&mut self, value: Value) {
@@ -233,8 +249,57 @@ impl Compiler {
         self.scope_depth += 1;
     }
 
-    pub fn end_scope(&mut self) {
+    pub fn end_scope(&mut self, parser: &mut Parser) {
         self.scope_depth -= 1;
+
+        //Would love to use self.locals.drain_filter() but it's nightly-only for now
+        while self.locals.len() > 0 && self.locals[self.locals.len() - 1].depth > self.scope_depth {
+            parser.emit_byte(OpCode::Pop as u8);
+            self.locals.pop();
+        }
+    }
+
+    pub fn declare_variable(&mut self, parser: &mut Parser) -> Result<(), RoxError> {
+        //Global variables are implicitly declared.
+        if self.scope_depth == 0 {
+            return Ok(());
+        }
+
+        let name = parser.previous.clone();
+
+        for l in self.locals.iter().rev() {
+            if l.depth != -1 && l.depth < self.scope_depth {
+                break;
+            }
+
+            if l.name.lexeme == name.lexeme {
+                return Err(RoxError::new(
+                    "Variable with this name already declared in this scope.",
+                    name.lexeme.clone(),
+                    name.line,
+                ));
+            }
+        }
+
+        self.add_local(name)
+    }
+
+    fn add_local(&mut self, name: Token) -> Result<(), RoxError> {
+        return if self.locals.len() > std::u8::MAX as usize {
+            Err(RoxError::new(
+                "Too many local variables in function.",
+                name.lexeme,
+                name.line,
+            ))
+        } else {
+            let local = Local {
+                name,
+                depth: self.scope_depth,
+            };
+
+            self.locals.push(local);
+            Ok(())
+        };
     }
 }
 
@@ -313,14 +378,14 @@ fn statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler
     } else if match_token(parser, scanner, LeftBrace) {
         compiler.begin_scope();
         block(parser, scanner, compiler);
-        compiler.end_scope();
+        compiler.end_scope(parser);
     } else {
         expression_statement(parser, scanner, compiler);
     }
 }
 
 fn var_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
-    let global = parser.parse_variable(scanner, "Expect variable name.");
+    let global = parser.parse_variable(scanner, compiler, "Expect variable name.");
 
     if match_token(parser, scanner, Equal) {
         expression(parser, scanner, compiler);
