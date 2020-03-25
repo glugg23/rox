@@ -75,7 +75,13 @@ impl Parser {
         let get_op;
         let set_op;
 
-        let mut arg = compiler.resolve_local(&name);
+        let mut arg = match compiler.resolve_local(&name) {
+            Ok(l) => l,
+            Err(e) => {
+                self.handle_error(e);
+                return;
+            }
+        };
 
         if arg != None {
             get_op = OpCode::GetLocal;
@@ -192,10 +198,13 @@ impl Parser {
         self.make_constant(Value::Object(ObjectType::String(Box::new(name.lexeme))))
     }
 
-    fn define_variable(&mut self, global: Option<u8>) {
+    fn define_variable(&mut self, compiler: &mut Compiler, global: Option<u8>) {
         match global {
             Some(g) => self.emit_bytes(OpCode::DefineGlobal as u8, g),
-            None => (), //No code needed at runtime for local variables
+            None => {
+                //No bytecode needed at runtime for local variables, just marked as initialised
+                compiler.locals.last_mut().unwrap().depth = compiler.scope_depth;
+            }
         }
     }
 
@@ -266,7 +275,7 @@ impl Compiler {
         self.scope_depth -= 1;
 
         //Would love to use self.locals.drain_filter() but it's nightly-only for now
-        while self.locals.len() > 0 && self.locals[self.locals.len() - 1].depth > self.scope_depth {
+        while matches!(self.locals.last(), Some(l) if l.depth > self.scope_depth) {
             parser.emit_byte(OpCode::Pop as u8);
             self.locals.pop();
         }
@@ -307,7 +316,7 @@ impl Compiler {
         } else {
             let local = Local {
                 name,
-                depth: self.scope_depth,
+                depth: Depth::Uninitialised,
             };
 
             self.locals.push(local);
@@ -315,14 +324,22 @@ impl Compiler {
         };
     }
 
-    pub fn resolve_local(&self, name: &Token) -> Option<u8> {
+    pub fn resolve_local(&self, name: &Token) -> Result<Option<u8>, RoxError> {
         for (i, l) in self.locals.iter().enumerate().rev() {
             if l.name.lexeme == name.lexeme {
-                return Some(i as u8);
+                return if l.depth == Depth::Uninitialised {
+                    Err(RoxError::new(
+                        "Cannot read local variable in its own initializer.",
+                        l.name.lexeme.clone(),
+                        l.name.line,
+                    ))
+                } else {
+                    Ok(Some(i as u8))
+                };
             }
         }
 
-        None
+        Ok(None)
     }
 }
 
@@ -451,7 +468,7 @@ fn var_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Comp
         parser.handle_error(e);
     });
 
-    parser.define_variable(global);
+    parser.define_variable(compiler, global);
 }
 
 fn print_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
