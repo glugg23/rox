@@ -343,6 +343,7 @@ impl Compiler {
     }
 }
 
+#[derive(Clone)]
 struct Local {
     name: Token,
     depth: Depth,
@@ -948,5 +949,21 @@ mod tests {
         parser.end_compiler();
 
         assert_eq!(parser.current_chunk.code[0], OpCode::Return as u8);
+    }
+
+    #[test]
+    fn compiler_add_local_max_num() {
+        let mut compiler = Compiler::new();
+        compiler.locals = vec![
+            Local {
+                name: Token::default(),
+                depth: Depth::Uninitialised,
+            };
+            std::u8::MAX as usize + 1
+        ];
+
+        let result = compiler.add_local(Token::default());
+
+        assert!(result.is_err());
     }
 }
