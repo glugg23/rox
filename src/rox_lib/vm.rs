@@ -159,6 +159,18 @@ impl VM {
                 Print => {
                     println!("{}", self.pop());
                 }
+                JumpIfFalse => {
+                    self.ip += 2;
+
+                    let offset = u16::from_be_bytes([
+                        self.chunk.code[self.ip - 2],
+                        self.chunk.code[self.ip - 1],
+                    ]);
+
+                    if self.peek(0).is_falsey() {
+                        self.ip += offset as usize;
+                    }
+                }
                 Return => {
                     return InterpretResult::Ok;
                 }

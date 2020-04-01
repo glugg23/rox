@@ -36,6 +36,30 @@ impl Parser {
         self.emit_byte(byte2);
     }
 
+    pub fn emit_jump(&mut self, instruction: u8) -> usize {
+        self.emit_byte(instruction);
+        self.emit_byte(0xFF); //Emit dummy address to be patched later
+        self.emit_byte(0xFF);
+        self.current_chunk.code.len() - 2
+    }
+
+    pub fn patch_jump(&mut self, offset: usize) -> Result<(), RoxError> {
+        //-2 used to adjust for the bytecode for the jump offset itself
+        let jump = self.current_chunk.code.len() - offset - 2;
+
+        if jump > std::u16::MAX as usize {
+            return Err(RoxError::new(
+                "Too much code to jump over.",
+                self.previous.lexeme.clone(),
+                self.previous.line,
+            ));
+        }
+
+        self.current_chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
+        self.current_chunk.code[offset + 1] = (jump & 0xFF) as u8;
+        Ok(())
+    }
+
     pub fn check(&self, token_type: TokenType) -> bool {
         self.current.token_type == token_type
     }
@@ -442,6 +466,8 @@ fn declaration(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compil
 fn statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
     if match_token(parser, scanner, Print) {
         print_statement(parser, scanner, compiler);
+    } else if match_token(parser, scanner, If) {
+        if_statement(parser, scanner, compiler);
     } else if match_token(parser, scanner, LeftBrace) {
         compiler.begin_scope();
         block(parser, scanner, compiler);
@@ -486,6 +512,23 @@ fn expression_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &m
         parser.handle_error(e);
     });
     parser.emit_byte(OpCode::Pop as u8);
+}
+
+fn if_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
+    consume(parser, scanner, LeftParen, "Expect '(' after 'if'.").unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+    expression(parser, scanner, compiler);
+    consume(parser, scanner, RightParen, "Expect ')' after condition.").unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+
+    let then_jump = parser.emit_jump(OpCode::JumpIfFalse as u8);
+    statement(parser, scanner, compiler);
+
+    parser.patch_jump(then_jump).unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
 }
 
 fn consume(

@@ -50,6 +50,7 @@ pub enum OpCode {
     Not,
     Negate,
     Print,
+    JumpIfFalse,
     Return,
 }
 
@@ -76,7 +77,8 @@ impl From<u8> for OpCode {
             17 => OpCode::Not,
             18 => OpCode::Negate,
             19 => OpCode::Print,
-            20 => OpCode::Return,
+            20 => OpCode::JumpIfFalse,
+            21 => OpCode::Return,
             _ => panic!("Unknown Opcode"),
         }
     }
@@ -108,6 +110,7 @@ impl Display for OpCode {
                 OpCode::Not => "NOT",
                 OpCode::Negate => "NEGATE",
                 OpCode::Print => "PRINT",
+                OpCode::JumpIfFalse => "JUMP IF FALSE",
                 OpCode::Return => "RETURN",
             }
         )

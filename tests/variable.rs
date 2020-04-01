@@ -34,7 +34,10 @@ fn in_middle_of_block() {
         .output()
         .expect("Error while running variable/in_middle_of_block()");
 
-    assert_eq!(str::from_utf8(&result.stdout).unwrap(), "a\na b\na c\na b d\n");
+    assert_eq!(
+        str::from_utf8(&result.stdout).unwrap(),
+        "a\na b\na c\na b d\n"
+    );
     assert!(result.status.success());
 }
 
