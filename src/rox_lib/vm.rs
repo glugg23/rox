@@ -159,16 +159,15 @@ impl VM {
                 Print => {
                     println!("{}", self.pop());
                 }
+                Jump => {
+                    let offset = self.read_short() as usize;
+                    self.ip += offset;
+                }
                 JumpIfFalse => {
-                    self.ip += 2;
-
-                    let offset = u16::from_be_bytes([
-                        self.chunk.code[self.ip - 2],
-                        self.chunk.code[self.ip - 1],
-                    ]);
+                    let offset = self.read_short() as usize;
 
                     if self.peek(0).is_falsey() {
-                        self.ip += offset as usize;
+                        self.ip += offset;
                     }
                 }
                 Return => {
@@ -187,6 +186,12 @@ impl VM {
     fn read_constant(&mut self) -> Value {
         let index = self.read_byte() as usize;
         self.chunk.constants[index].clone()
+    }
+
+    fn read_short(&mut self) -> u16 {
+        self.ip += 2;
+
+        u16::from_be_bytes([self.chunk.code[self.ip - 2], self.chunk.code[self.ip - 1]])
     }
 
     fn push(&mut self, value: Value) {

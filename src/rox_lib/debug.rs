@@ -27,7 +27,7 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
         GetLocal | SetLocal => byte_instruction(instruction, chunk, offset),
         Nil | True | False | Pop | Equal | Greater | Less | Add | Subtract | Multiple | Divide
         | Not | Negate | Print | Return => simple_instruction(instruction, offset),
-        JumpIfFalse => jump_instruction(instruction, 1, chunk, offset),
+        Jump | JumpIfFalse => jump_instruction(instruction, 1, chunk, offset),
     }
 }
 

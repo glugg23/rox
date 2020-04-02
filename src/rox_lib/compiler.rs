@@ -524,9 +524,21 @@ fn if_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compi
     });
 
     let then_jump = parser.emit_jump(OpCode::JumpIfFalse as u8);
+    parser.emit_byte(OpCode::Pop as u8);
     statement(parser, scanner, compiler);
 
+    let else_jump = parser.emit_jump(OpCode::Jump as u8);
+
     parser.patch_jump(then_jump).unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+
+    parser.emit_byte(OpCode::Pop as u8);
+    if match_token(parser, scanner, Else) {
+        statement(parser, scanner, compiler);
+    }
+
+    parser.patch_jump(else_jump).unwrap_or_else(|e| {
         parser.handle_error(e);
     });
 }
