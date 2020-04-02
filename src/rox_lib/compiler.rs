@@ -490,16 +490,23 @@ fn declaration(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compil
 }
 
 fn statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
-    if match_token(parser, scanner, Print) {
-        print_statement(parser, scanner, compiler);
-    } else if match_token(parser, scanner, If) {
-        if_statement(parser, scanner, compiler);
-    } else if match_token(parser, scanner, LeftBrace) {
-        compiler.begin_scope();
-        block(parser, scanner, compiler);
-        compiler.end_scope(parser);
-    } else {
-        expression_statement(parser, scanner, compiler);
+    match parser.current.token_type {
+        Print => {
+            advance(parser, scanner);
+            print_statement(parser, scanner, compiler);
+        }
+        If => {
+            advance(parser, scanner);
+            if_statement(parser, scanner, compiler);
+        }
+        LeftBrace => {
+            advance(parser, scanner);
+
+            compiler.begin_scope();
+            block(parser, scanner, compiler);
+            compiler.end_scope(parser);
+        }
+        _ => expression_statement(parser, scanner, compiler),
     }
 }
 
