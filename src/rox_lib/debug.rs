@@ -40,16 +40,14 @@ fn constant_instruction(instruction: OpCode, chunk: &Chunk, offset: usize) -> us
     let constant = chunk.code[offset + 1] as usize;
     println!(
         "{:<16} {:>4} {}",
-        instruction.to_string(),
-        constant,
-        chunk.constants[constant]
+        instruction, constant, chunk.constants[constant]
     );
     offset + 2
 }
 
 fn byte_instruction(instruction: OpCode, chunk: &Chunk, offset: usize) -> usize {
     let slot = chunk.code[offset + 1] as usize;
-    println!("{:<16} {:>4}", instruction.to_string(), slot);
+    println!("{:<16} {:>4}", instruction, slot);
     offset + 2
 }
 
@@ -57,7 +55,7 @@ fn jump_instruction(instruction: OpCode, sign: i32, chunk: &Chunk, offset: usize
     let jump = u16::from_be_bytes([chunk.code[offset + 1], chunk.code[offset + 2]]);
     println!(
         "{:<16} {:>4} -> {}",
-        instruction.to_string(),
+        instruction,
         offset,
         offset + 3 + (sign * jump as i32) as usize
     );
