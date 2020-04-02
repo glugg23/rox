@@ -156,6 +156,32 @@ impl Parser {
         }
     }
 
+    fn and(&mut self, scanner: &mut Scanner, compiler: &mut Compiler) {
+        let end_jump = self.emit_jump(OpCode::JumpIfFalse as u8);
+
+        self.emit_byte(OpCode::Pop as u8);
+        self.parse_precedence(scanner, compiler, Precedence::And);
+
+        self.patch_jump(end_jump).unwrap_or_else(|e| {
+            self.handle_error(e);
+        });
+    }
+
+    fn or(&mut self, scanner: &mut Scanner, compiler: &mut Compiler) {
+        let else_jump = self.emit_jump(OpCode::JumpIfFalse as u8);
+        let end_jump = self.emit_jump(OpCode::Jump as u8);
+
+        self.patch_jump(else_jump).unwrap_or_else(|e| {
+            self.handle_error(e);
+        });
+        self.emit_byte(OpCode::Pop as u8);
+
+        self.parse_precedence(scanner, compiler, Precedence::Or);
+        self.patch_jump(end_jump).unwrap_or_else(|e| {
+            self.handle_error(e);
+        });
+    }
+
     fn parse_precedence(
         &mut self,
         scanner: &mut Scanner,
@@ -764,8 +790,8 @@ const RULES: &'static [ParseRule] = &[
     //And
     ParseRule {
         prefix: None,
-        infix: None,
-        precedence: Precedence::None,
+        infix: Some(|p, s, c, _ca| p.and(s, c)),
+        precedence: Precedence::And,
     },
     //Class
     ParseRule {
@@ -812,8 +838,8 @@ const RULES: &'static [ParseRule] = &[
     //Or
     ParseRule {
         prefix: None,
-        infix: None,
-        precedence: Precedence::None,
+        infix: Some(|p, s, c, _ca| p.or(s, c)),
+        precedence: Precedence::Or,
     },
     //Print
     ParseRule {
