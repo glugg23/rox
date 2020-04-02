@@ -498,7 +498,7 @@ fn block(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
 
 fn declaration(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
     if match_token(parser, scanner, Var) {
-        var_statement(parser, scanner, compiler);
+        var_declaration(parser, scanner, compiler);
     } else {
         statement(parser, scanner, compiler);
     }
@@ -508,32 +508,7 @@ fn declaration(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compil
     }
 }
 
-fn statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
-    match parser.current.token_type {
-        Print => {
-            advance(parser, scanner);
-            print_statement(parser, scanner, compiler);
-        }
-        If => {
-            advance(parser, scanner);
-            if_statement(parser, scanner, compiler);
-        }
-        While => {
-            advance(parser, scanner);
-            while_statement(parser, scanner, compiler);
-        }
-        LeftBrace => {
-            advance(parser, scanner);
-
-            compiler.begin_scope();
-            block(parser, scanner, compiler);
-            compiler.end_scope(parser);
-        }
-        _ => expression_statement(parser, scanner, compiler),
-    }
-}
-
-fn var_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
+fn var_declaration(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
     let global = parser.parse_variable(scanner, compiler, "Expect variable name.");
 
     if match_token(parser, scanner, Equal) {
@@ -552,6 +527,35 @@ fn var_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Comp
     });
 
     parser.define_variable(compiler, global);
+}
+
+fn statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
+    match parser.current.token_type {
+        Print => {
+            advance(parser, scanner);
+            print_statement(parser, scanner, compiler);
+        }
+        If => {
+            advance(parser, scanner);
+            if_statement(parser, scanner, compiler);
+        }
+        While => {
+            advance(parser, scanner);
+            while_statement(parser, scanner, compiler);
+        }
+        For => {
+            advance(parser, scanner);
+            for_statement(parser, scanner, compiler);
+        }
+        LeftBrace => {
+            advance(parser, scanner);
+
+            compiler.begin_scope();
+            block(parser, scanner, compiler);
+            compiler.end_scope(parser);
+        }
+        _ => expression_statement(parser, scanner, compiler),
+    }
 }
 
 fn print_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
@@ -623,6 +627,79 @@ fn while_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Co
         parser.handle_error(e);
     });
     parser.emit_byte(OpCode::Pop as u8);
+}
+
+fn for_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
+    compiler.begin_scope();
+
+    consume(parser, scanner, LeftParen, "Expect '(' after 'for'.").unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+
+    if match_token(parser, scanner, Semicolon) {
+        //No initializer
+    } else if match_token(parser, scanner, Var) {
+        var_declaration(parser, scanner, compiler);
+    } else {
+        expression_statement(parser, scanner, compiler);
+    }
+
+    let mut loop_start = parser.current_chunk.code.len();
+
+    let mut exit_jump = None;
+    if !match_token(parser, scanner, Semicolon) {
+        expression(parser, scanner, compiler);
+        consume(
+            parser,
+            scanner,
+            Semicolon,
+            "Expect ';' after loop condition.",
+        )
+        .unwrap_or_else(|e| {
+            parser.handle_error(e);
+        });
+
+        //Jump out of the loop if the condition is false.
+        exit_jump = Some(parser.emit_jump(OpCode::JumpIfFalse as u8));
+        parser.emit_byte(OpCode::Pop as u8); //Condition
+    }
+
+    if !match_token(parser, scanner, RightParen) {
+        let body_jump = parser.emit_jump(OpCode::Jump as u8);
+
+        let increment_start = parser.current_chunk.code.len();
+        expression(parser, scanner, compiler);
+        parser.emit_byte(OpCode::Pop as u8);
+        consume(parser, scanner, RightParen, "Expect ')' after for clauses.").unwrap_or_else(|e| {
+            parser.handle_error(e);
+        });
+
+        parser.emit_loop(loop_start).unwrap_or_else(|e| {
+            parser.handle_error(e);
+        });
+        loop_start = increment_start;
+        parser.patch_jump(body_jump).unwrap_or_else(|e| {
+            parser.handle_error(e);
+        });
+    }
+
+    statement(parser, scanner, compiler);
+
+    parser.emit_loop(loop_start).unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+
+    match exit_jump {
+        Some(jump) => {
+            parser.patch_jump(jump).unwrap_or_else(|e| {
+                parser.handle_error(e);
+            });
+            parser.emit_byte(OpCode::Pop as u8); //Condition
+        }
+        None => (),
+    }
+
+    compiler.end_scope(parser);
 }
 
 fn consume(
