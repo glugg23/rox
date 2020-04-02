@@ -170,6 +170,10 @@ impl VM {
                         self.ip += offset;
                     }
                 }
+                Loop => {
+                    let offset = self.read_short() as usize;
+                    self.ip -= offset;
+                }
                 Return => {
                     return InterpretResult::Ok;
                 }

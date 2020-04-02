@@ -60,6 +60,25 @@ impl Parser {
         Ok(())
     }
 
+    pub fn emit_loop(&mut self, loop_start: usize) -> Result<(), RoxError> {
+        self.emit_byte(OpCode::Loop as u8);
+
+        let offset = self.current_chunk.code.len() - loop_start + 2;
+
+        if offset > std::u16::MAX as usize {
+            return Err(RoxError::new(
+                "Loop body too large.",
+                self.previous.lexeme.clone(),
+                self.previous.line,
+            ));
+        }
+
+        self.emit_byte(((offset >> 8) & 0xFF) as u8);
+        self.emit_byte((offset & 0xFF) as u8);
+
+        Ok(())
+    }
+
     pub fn check(&self, token_type: TokenType) -> bool {
         self.current.token_type == token_type
     }
@@ -499,6 +518,10 @@ fn statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler
             advance(parser, scanner);
             if_statement(parser, scanner, compiler);
         }
+        While => {
+            advance(parser, scanner);
+            while_statement(parser, scanner, compiler);
+        }
         LeftBrace => {
             advance(parser, scanner);
 
@@ -574,6 +597,32 @@ fn if_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compi
     parser.patch_jump(else_jump).unwrap_or_else(|e| {
         parser.handle_error(e);
     });
+}
+
+fn while_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
+    let loop_start = parser.current_chunk.code.len();
+
+    consume(parser, scanner, LeftParen, "Expect '(' after 'while'.").unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+    expression(parser, scanner, compiler);
+    consume(parser, scanner, RightParen, "Expect ')' after condition.").unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+
+    let exit_jump = parser.emit_jump(OpCode::JumpIfFalse as u8);
+
+    parser.emit_byte(OpCode::Pop as u8);
+    statement(parser, scanner, compiler);
+
+    parser.emit_loop(loop_start).unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+
+    parser.patch_jump(exit_jump).unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+    parser.emit_byte(OpCode::Pop as u8);
 }
 
 fn consume(

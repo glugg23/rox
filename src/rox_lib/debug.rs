@@ -28,6 +28,7 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
         Nil | True | False | Pop | Equal | Greater | Less | Add | Subtract | Multiple | Divide
         | Not | Negate | Print | Return => simple_instruction(instruction, offset),
         Jump | JumpIfFalse => jump_instruction(instruction, 1, chunk, offset),
+        Loop => jump_instruction(instruction, -1, chunk, offset),
     }
 }
 
@@ -52,12 +53,12 @@ fn byte_instruction(instruction: OpCode, chunk: &Chunk, offset: usize) -> usize 
 }
 
 fn jump_instruction(instruction: OpCode, sign: i32, chunk: &Chunk, offset: usize) -> usize {
-    let jump = u16::from_be_bytes([chunk.code[offset + 1], chunk.code[offset + 2]]);
+    let jump = u16::from_be_bytes([chunk.code[offset + 1], chunk.code[offset + 2]]) as i32;
     println!(
         "{:<16} {:>4} -> {}",
         instruction,
         offset,
-        offset + 3 + (sign * jump as i32) as usize
+        offset as i32 + 3 + (sign * jump)
     );
     offset + 3
 }
