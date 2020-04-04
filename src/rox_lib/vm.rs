@@ -280,6 +280,20 @@ mod tests {
     }
 
     #[test]
+    fn vm_read_short() {
+        let mut vm = VM::new();
+        vm.chunk = Chunk {
+            code: vec![255, 1],
+            constants: Vec::new(),
+            lines: Vec::new(),
+        };
+
+        let result = vm.read_short();
+
+        assert_eq!(result, 65281);
+    }
+
+    #[test]
     fn vm_interpret_compile_error() {
         let mut vm = VM::new();
 
@@ -576,6 +590,87 @@ mod tests {
         let mut vm = VM::new();
 
         let result = vm.interpret("print \"hello world\"");
+
+        assert_eq!(result, InterpretResult::CompileError);
+    }
+
+    #[test]
+    fn vm_interpret_if() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("if(true){1;}");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_if_no_paren() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("if false {0;}");
+
+        assert_eq!(result, InterpretResult::CompileError);
+    }
+
+    #[test]
+    fn vm_interpret_if_else() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("if(false){0;}else{1;}");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_and() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("true and true;");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_or() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("true or true;");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_while() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("while(false){0;}");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_while_no_paren() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("while false {0;}");
+
+        assert_eq!(result, InterpretResult::CompileError);
+    }
+
+    #[test]
+    fn vm_interpret_for() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("for(var i=0;i<5;i=i+1){i;}");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_for_syntax_error() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("for{0;}");
 
         assert_eq!(result, InterpretResult::CompileError);
     }

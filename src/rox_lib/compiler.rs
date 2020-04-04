@@ -1166,6 +1166,28 @@ mod tests {
     }
 
     #[test]
+    fn parser_emit_loop_max_num() {
+        let mut parser = Parser::new();
+        parser.current_chunk.code = vec![0; std::u16::MAX as usize];
+        let loop_start = 0;
+
+        let result = parser.emit_loop(loop_start);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parser_patch_jump_max_num() {
+        let mut parser = Parser::new();
+        parser.current_chunk.code = vec![0; std::u16::MAX as usize + 3];
+        let offset = 0;
+
+        let result = parser.patch_jump(offset);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn compiler_add_local_max_num() {
         let mut compiler = Compiler::new();
         compiler.locals = vec![
