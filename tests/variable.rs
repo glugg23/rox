@@ -218,6 +218,23 @@ fn uninitialized() {
 }
 
 #[test]
+fn unreached_undefined() {
+    let result = Command::new("cargo")
+        .args(&[
+            "run",
+            "-q",
+            "--release",
+            "--",
+            "tests/resources/variable/unreached_undefined.lox",
+        ])
+        .output()
+        .expect("Error while running variable/unreached_undefined()");
+
+    assert_eq!(str::from_utf8(&result.stdout).unwrap(), "ok\n");
+    assert!(result.status.success());
+}
+
+#[test]
 fn use_false_as_var() {
     let result = Command::new("cargo")
         .args(&[
