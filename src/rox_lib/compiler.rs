@@ -36,6 +36,49 @@ impl Parser {
         self.emit_byte(byte2);
     }
 
+    pub fn emit_jump(&mut self, instruction: u8) -> usize {
+        self.emit_byte(instruction);
+        self.emit_byte(0xFF); //Emit dummy address to be patched later
+        self.emit_byte(0xFF);
+        self.current_chunk.code.len() - 2
+    }
+
+    pub fn patch_jump(&mut self, offset: usize) -> Result<(), RoxError> {
+        //-2 used to adjust for the bytecode for the jump offset itself
+        let jump = self.current_chunk.code.len() - offset - 2;
+
+        if jump > std::u16::MAX as usize {
+            return Err(RoxError::new(
+                "Too much code to jump over.",
+                self.previous.lexeme.clone(),
+                self.previous.line,
+            ));
+        }
+
+        self.current_chunk.code[offset] = ((jump >> 8) & 0xFF) as u8;
+        self.current_chunk.code[offset + 1] = (jump & 0xFF) as u8;
+        Ok(())
+    }
+
+    pub fn emit_loop(&mut self, loop_start: usize) -> Result<(), RoxError> {
+        self.emit_byte(OpCode::Loop as u8);
+
+        let offset = self.current_chunk.code.len() - loop_start + 2;
+
+        if offset > std::u16::MAX as usize {
+            return Err(RoxError::new(
+                "Loop body too large.",
+                self.previous.lexeme.clone(),
+                self.previous.line,
+            ));
+        }
+
+        self.emit_byte(((offset >> 8) & 0xFF) as u8);
+        self.emit_byte((offset & 0xFF) as u8);
+
+        Ok(())
+    }
+
     pub fn check(&self, token_type: TokenType) -> bool {
         self.current.token_type == token_type
     }
@@ -130,6 +173,32 @@ impl Parser {
             Slash => self.emit_byte(OpCode::Divide as u8),
             _ => (),
         }
+    }
+
+    fn and(&mut self, scanner: &mut Scanner, compiler: &mut Compiler) {
+        let end_jump = self.emit_jump(OpCode::JumpIfFalse as u8);
+
+        self.emit_byte(OpCode::Pop as u8);
+        self.parse_precedence(scanner, compiler, Precedence::And);
+
+        self.patch_jump(end_jump).unwrap_or_else(|e| {
+            self.handle_error(e);
+        });
+    }
+
+    fn or(&mut self, scanner: &mut Scanner, compiler: &mut Compiler) {
+        let else_jump = self.emit_jump(OpCode::JumpIfFalse as u8);
+        let end_jump = self.emit_jump(OpCode::Jump as u8);
+
+        self.patch_jump(else_jump).unwrap_or_else(|e| {
+            self.handle_error(e);
+        });
+        self.emit_byte(OpCode::Pop as u8);
+
+        self.parse_precedence(scanner, compiler, Precedence::Or);
+        self.patch_jump(end_jump).unwrap_or_else(|e| {
+            self.handle_error(e);
+        });
     }
 
     fn parse_precedence(
@@ -429,7 +498,7 @@ fn block(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
 
 fn declaration(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
     if match_token(parser, scanner, Var) {
-        var_statement(parser, scanner, compiler);
+        var_declaration(parser, scanner, compiler);
     } else {
         statement(parser, scanner, compiler);
     }
@@ -439,19 +508,7 @@ fn declaration(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compil
     }
 }
 
-fn statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
-    if match_token(parser, scanner, Print) {
-        print_statement(parser, scanner, compiler);
-    } else if match_token(parser, scanner, LeftBrace) {
-        compiler.begin_scope();
-        block(parser, scanner, compiler);
-        compiler.end_scope(parser);
-    } else {
-        expression_statement(parser, scanner, compiler);
-    }
-}
-
-fn var_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
+fn var_declaration(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
     let global = parser.parse_variable(scanner, compiler, "Expect variable name.");
 
     if match_token(parser, scanner, Equal) {
@@ -472,6 +529,35 @@ fn var_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Comp
     parser.define_variable(compiler, global);
 }
 
+fn statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
+    match parser.current.token_type {
+        Print => {
+            advance(parser, scanner);
+            print_statement(parser, scanner, compiler);
+        }
+        If => {
+            advance(parser, scanner);
+            if_statement(parser, scanner, compiler);
+        }
+        While => {
+            advance(parser, scanner);
+            while_statement(parser, scanner, compiler);
+        }
+        For => {
+            advance(parser, scanner);
+            for_statement(parser, scanner, compiler);
+        }
+        LeftBrace => {
+            advance(parser, scanner);
+
+            compiler.begin_scope();
+            block(parser, scanner, compiler);
+            compiler.end_scope(parser);
+        }
+        _ => expression_statement(parser, scanner, compiler),
+    }
+}
+
 fn print_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
     expression(parser, scanner, compiler);
     consume(parser, scanner, Semicolon, "Expect ';' after value.").unwrap_or_else(|e| {
@@ -486,6 +572,134 @@ fn expression_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &m
         parser.handle_error(e);
     });
     parser.emit_byte(OpCode::Pop as u8);
+}
+
+fn if_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
+    consume(parser, scanner, LeftParen, "Expect '(' after 'if'.").unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+    expression(parser, scanner, compiler);
+    consume(parser, scanner, RightParen, "Expect ')' after condition.").unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+
+    let then_jump = parser.emit_jump(OpCode::JumpIfFalse as u8);
+    parser.emit_byte(OpCode::Pop as u8);
+    statement(parser, scanner, compiler);
+
+    let else_jump = parser.emit_jump(OpCode::Jump as u8);
+
+    parser.patch_jump(then_jump).unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+
+    parser.emit_byte(OpCode::Pop as u8);
+    if match_token(parser, scanner, Else) {
+        statement(parser, scanner, compiler);
+    }
+
+    parser.patch_jump(else_jump).unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+}
+
+fn while_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
+    let loop_start = parser.current_chunk.code.len();
+
+    consume(parser, scanner, LeftParen, "Expect '(' after 'while'.").unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+    expression(parser, scanner, compiler);
+    consume(parser, scanner, RightParen, "Expect ')' after condition.").unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+
+    let exit_jump = parser.emit_jump(OpCode::JumpIfFalse as u8);
+
+    parser.emit_byte(OpCode::Pop as u8);
+    statement(parser, scanner, compiler);
+
+    parser.emit_loop(loop_start).unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+
+    parser.patch_jump(exit_jump).unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+    parser.emit_byte(OpCode::Pop as u8);
+}
+
+fn for_statement(parser: &mut Parser, scanner: &mut Scanner, compiler: &mut Compiler) {
+    compiler.begin_scope();
+
+    consume(parser, scanner, LeftParen, "Expect '(' after 'for'.").unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+
+    if match_token(parser, scanner, Semicolon) {
+        //No initializer
+    } else if match_token(parser, scanner, Var) {
+        var_declaration(parser, scanner, compiler);
+    } else {
+        expression_statement(parser, scanner, compiler);
+    }
+
+    let mut loop_start = parser.current_chunk.code.len();
+
+    let mut exit_jump = None;
+    if !match_token(parser, scanner, Semicolon) {
+        expression(parser, scanner, compiler);
+        consume(
+            parser,
+            scanner,
+            Semicolon,
+            "Expect ';' after loop condition.",
+        )
+        .unwrap_or_else(|e| {
+            parser.handle_error(e);
+        });
+
+        //Jump out of the loop if the condition is false.
+        exit_jump = Some(parser.emit_jump(OpCode::JumpIfFalse as u8));
+        parser.emit_byte(OpCode::Pop as u8); //Condition
+    }
+
+    if !match_token(parser, scanner, RightParen) {
+        let body_jump = parser.emit_jump(OpCode::Jump as u8);
+
+        let increment_start = parser.current_chunk.code.len();
+        expression(parser, scanner, compiler);
+        parser.emit_byte(OpCode::Pop as u8);
+        consume(parser, scanner, RightParen, "Expect ')' after for clauses.").unwrap_or_else(|e| {
+            parser.handle_error(e);
+        });
+
+        parser.emit_loop(loop_start).unwrap_or_else(|e| {
+            parser.handle_error(e);
+        });
+        loop_start = increment_start;
+        parser.patch_jump(body_jump).unwrap_or_else(|e| {
+            parser.handle_error(e);
+        });
+    }
+
+    statement(parser, scanner, compiler);
+
+    parser.emit_loop(loop_start).unwrap_or_else(|e| {
+        parser.handle_error(e);
+    });
+
+    match exit_jump {
+        Some(jump) => {
+            parser.patch_jump(jump).unwrap_or_else(|e| {
+                parser.handle_error(e);
+            });
+            parser.emit_byte(OpCode::Pop as u8); //Condition
+        }
+        None => (),
+    }
+
+    compiler.end_scope(parser);
 }
 
 fn consume(
@@ -709,8 +923,8 @@ const RULES: &'static [ParseRule] = &[
     //And
     ParseRule {
         prefix: None,
-        infix: None,
-        precedence: Precedence::None,
+        infix: Some(|p, s, c, _ca| p.and(s, c)),
+        precedence: Precedence::And,
     },
     //Class
     ParseRule {
@@ -757,8 +971,8 @@ const RULES: &'static [ParseRule] = &[
     //Or
     ParseRule {
         prefix: None,
-        infix: None,
-        precedence: Precedence::None,
+        infix: Some(|p, s, c, _ca| p.or(s, c)),
+        precedence: Precedence::Or,
     },
     //Print
     ParseRule {
@@ -949,6 +1163,28 @@ mod tests {
         parser.end_compiler();
 
         assert_eq!(parser.current_chunk.code[0], OpCode::Return as u8);
+    }
+
+    #[test]
+    fn parser_emit_loop_max_num() {
+        let mut parser = Parser::new();
+        parser.current_chunk.code = vec![0; std::u16::MAX as usize];
+        let loop_start = 0;
+
+        let result = parser.emit_loop(loop_start);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn parser_patch_jump_max_num() {
+        let mut parser = Parser::new();
+        parser.current_chunk.code = vec![0; std::u16::MAX as usize + 3];
+        let offset = 0;
+
+        let result = parser.patch_jump(offset);
+
+        assert!(result.is_err());
     }
 
     #[test]

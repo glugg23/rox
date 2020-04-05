@@ -50,6 +50,9 @@ pub enum OpCode {
     Not,
     Negate,
     Print,
+    Jump,
+    JumpIfFalse,
+    Loop,
     Return,
 }
 
@@ -76,7 +79,10 @@ impl From<u8> for OpCode {
             17 => OpCode::Not,
             18 => OpCode::Negate,
             19 => OpCode::Print,
-            20 => OpCode::Return,
+            20 => OpCode::Jump,
+            21 => OpCode::JumpIfFalse,
+            22 => OpCode::Loop,
+            23 => OpCode::Return,
             _ => panic!("Unknown Opcode"),
         }
     }
@@ -84,33 +90,32 @@ impl From<u8> for OpCode {
 
 impl Display for OpCode {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                OpCode::Constant => "CONSTANT",
-                OpCode::Nil => "NIL",
-                OpCode::True => "TRUE",
-                OpCode::False => "FALSE",
-                OpCode::Pop => "POP",
-                OpCode::GetLocal => "GET LOCAL",
-                OpCode::SetLocal => "SET LOCAL",
-                OpCode::GetGlobal => "GET GLOBAL",
-                OpCode::DefineGlobal => "DEFINE GLOBAL",
-                OpCode::SetGlobal => "SET GLOBAL",
-                OpCode::Equal => "EQUAL",
-                OpCode::Greater => "GREATER",
-                OpCode::Less => "LESS",
-                OpCode::Add => "ADD",
-                OpCode::Subtract => "SUBTRACT",
-                OpCode::Multiple => "MULTIPLE",
-                OpCode::Divide => "DIVIDE",
-                OpCode::Not => "NOT",
-                OpCode::Negate => "NEGATE",
-                OpCode::Print => "PRINT",
-                OpCode::Return => "RETURN",
-            }
-        )
+        f.pad(match self {
+            OpCode::Constant => "CONSTANT",
+            OpCode::Nil => "NIL",
+            OpCode::True => "TRUE",
+            OpCode::False => "FALSE",
+            OpCode::Pop => "POP",
+            OpCode::GetLocal => "GET LOCAL",
+            OpCode::SetLocal => "SET LOCAL",
+            OpCode::GetGlobal => "GET GLOBAL",
+            OpCode::DefineGlobal => "DEFINE GLOBAL",
+            OpCode::SetGlobal => "SET GLOBAL",
+            OpCode::Equal => "EQUAL",
+            OpCode::Greater => "GREATER",
+            OpCode::Less => "LESS",
+            OpCode::Add => "ADD",
+            OpCode::Subtract => "SUBTRACT",
+            OpCode::Multiple => "MULTIPLE",
+            OpCode::Divide => "DIVIDE",
+            OpCode::Not => "NOT",
+            OpCode::Negate => "NEGATE",
+            OpCode::Print => "PRINT",
+            OpCode::Jump => "JUMP",
+            OpCode::JumpIfFalse => "JUMP IF FALSE",
+            OpCode::Loop => "LOOP",
+            OpCode::Return => "RETURN",
+        })
     }
 }
 
