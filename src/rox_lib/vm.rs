@@ -159,6 +159,21 @@ impl VM {
                 Print => {
                     println!("{}", self.pop());
                 }
+                Jump => {
+                    let offset = self.read_short() as usize;
+                    self.ip += offset;
+                }
+                JumpIfFalse => {
+                    let offset = self.read_short() as usize;
+
+                    if self.peek(0).is_falsey() {
+                        self.ip += offset;
+                    }
+                }
+                Loop => {
+                    let offset = self.read_short() as usize;
+                    self.ip -= offset;
+                }
                 Return => {
                     return InterpretResult::Ok;
                 }
@@ -175,6 +190,12 @@ impl VM {
     fn read_constant(&mut self) -> Value {
         let index = self.read_byte() as usize;
         self.chunk.constants[index].clone()
+    }
+
+    fn read_short(&mut self) -> u16 {
+        self.ip += 2;
+
+        u16::from_be_bytes([self.chunk.code[self.ip - 2], self.chunk.code[self.ip - 1]])
     }
 
     fn push(&mut self, value: Value) {
@@ -256,6 +277,20 @@ mod tests {
         let result = vm.read_constant();
 
         assert_eq!(result, Value::Number(1.0));
+    }
+
+    #[test]
+    fn vm_read_short() {
+        let mut vm = VM::new();
+        vm.chunk = Chunk {
+            code: vec![255, 1],
+            constants: Vec::new(),
+            lines: Vec::new(),
+        };
+
+        let result = vm.read_short();
+
+        assert_eq!(result, 65281);
     }
 
     #[test]
@@ -555,6 +590,87 @@ mod tests {
         let mut vm = VM::new();
 
         let result = vm.interpret("print \"hello world\"");
+
+        assert_eq!(result, InterpretResult::CompileError);
+    }
+
+    #[test]
+    fn vm_interpret_if() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("if(true){1;}");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_if_no_paren() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("if false {0;}");
+
+        assert_eq!(result, InterpretResult::CompileError);
+    }
+
+    #[test]
+    fn vm_interpret_if_else() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("if(false){0;}else{1;}");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_and() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("true and true;");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_or() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("true or true;");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_while() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("while(false){0;}");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_while_no_paren() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("while false {0;}");
+
+        assert_eq!(result, InterpretResult::CompileError);
+    }
+
+    #[test]
+    fn vm_interpret_for() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("for(var i=0;i<5;i=i+1){i;}");
+
+        assert_eq!(result, InterpretResult::Ok);
+    }
+
+    #[test]
+    fn vm_interpret_for_syntax_error() {
+        let mut vm = VM::new();
+
+        let result = vm.interpret("for{0;}");
 
         assert_eq!(result, InterpretResult::CompileError);
     }

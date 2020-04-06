@@ -27,6 +27,8 @@ pub fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
         GetLocal | SetLocal => byte_instruction(instruction, chunk, offset),
         Nil | True | False | Pop | Equal | Greater | Less | Add | Subtract | Multiple | Divide
         | Not | Negate | Print | Return => simple_instruction(instruction, offset),
+        Jump | JumpIfFalse => jump_instruction(instruction, 1, chunk, offset),
+        Loop => jump_instruction(instruction, -1, chunk, offset),
     }
 }
 
@@ -37,13 +39,26 @@ fn simple_instruction(instruction: OpCode, offset: usize) -> usize {
 
 fn constant_instruction(instruction: OpCode, chunk: &Chunk, offset: usize) -> usize {
     let constant = chunk.code[offset + 1] as usize;
-    print!("{:<16} {:>4} ", instruction.to_string(), constant);
-    println!("{}", chunk.constants[constant]);
+    println!(
+        "{:<16} {:>4} {}",
+        instruction, constant, chunk.constants[constant]
+    );
     offset + 2
 }
 
 fn byte_instruction(instruction: OpCode, chunk: &Chunk, offset: usize) -> usize {
     let slot = chunk.code[offset + 1] as usize;
-    println!("{:<16} {:>4} ", instruction.to_string(), slot);
+    println!("{:<16} {:>4}", instruction, slot);
     offset + 2
+}
+
+fn jump_instruction(instruction: OpCode, sign: i32, chunk: &Chunk, offset: usize) -> usize {
+    let jump = u16::from_be_bytes([chunk.code[offset + 1], chunk.code[offset + 2]]) as i32;
+    println!(
+        "{:<16} {:>4} -> {}",
+        instruction,
+        offset,
+        offset as i32 + 3 + (sign * jump)
+    );
+    offset + 3
 }
