@@ -2,6 +2,7 @@ use crate::value::Value;
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
+#[derive(Clone, Debug, PartialEq)]
 pub struct Chunk {
     pub code: Vec<u8>,
     pub constants: Vec<Value>,
